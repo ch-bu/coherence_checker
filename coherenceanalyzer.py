@@ -13,7 +13,7 @@ from enchant.checker import SpellChecker
 from collections import Counter
 
 
-class TextManipulation:
+class CoherenceAnalyzer:
 
 	def __init__(self, text):
 
@@ -550,21 +550,21 @@ class TextManipulation:
 
 
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
 	
-	text = TextManipulation("""Die Polizei hat zwei der mutmaßlichen Attentäter von San Bernardino getötet. 
-		Ein Mann und eine Frau seien erschossen worden, sagte der Polizeichef der Stadt, Jarrod Burguan.
-		 einen Angaben zufolge waren die beiden ein Paar. Ein dritter mutmaßlicher Verdächtiger sei auf der Flucht von Beamten gestellt worden. 
-		Wie genau er in die Tat verwickelt ist, sei noch unklar.
-		Die Suche nach den Angreifern hatte San Bernardino am Mittwoch stundenlang gelähmt. """)
+# 	text = TextManipulation("""Die Polizei hat zwei der mutmaßlichen Attentäter von San Bernardino getötet. 
+# 		Ein Mann und eine Frau seien erschossen worden, sagte der Polizeichef der Stadt, Jarrod Burguan.
+# 		 einen Angaben zufolge waren die beiden ein Paar. Ein dritter mutmaßlicher Verdächtiger sei auf der Flucht von Beamten gestellt worden. 
+# 		Wie genau er in die Tat verwickelt ist, sei noch unklar.
+# 		Die Suche nach den Angreifern hatte San Bernardino am Mittwoch stundenlang gelähmt. """)
 
-	print(text.text)
-	print("Count of words: " + str(text.get_words()))
-	print("Tags: " + str(text.tags))
-	print("Sentences: " + str(text.get_sentences()))
-	print("Number of sentences: " + str(text.get_num_sentences()))
-	print("Coherence sentences: " + str(text.get_coherence_sentences()))
-	print("Clusters: " + str(text.get_clusters()))
-	print("Number of clusters: " + str(text.get_num_clusters()))
-	print("Concepts: " + str(text.get_num_concepts()))
-	print("Word_pairs: " + str(text.get_word_pairs()))
+# 	print(text.text)
+# 	print("Count of words: " + str(text.get_words()))
+# 	print("Tags: " + str(text.tags))
+# 	print("Sentences: " + str(text.get_sentences()))
+# 	print("Number of sentences: " + str(text.get_num_sentences()))
+# 	print("Coherence sentences: " + str(text.get_coherence_sentences()))
+# 	print("Clusters: " + str(text.get_clusters()))
+# 	print("Number of clusters: " + str(text.get_num_clusters()))
+# 	print("Concepts: " + str(text.get_num_concepts()))
+# 	print("Word_pairs: " + str(text.get_word_pairs()))

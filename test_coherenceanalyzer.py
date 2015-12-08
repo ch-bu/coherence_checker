@@ -1,7 +1,7 @@
 # encoding: utf-8
 
 import unittest
-from textmanipulate import TextManipulation
+from coherenceanalyzer import CoherenceAnalyzer
 
 
 # ********************* Texts *************************************************
@@ -19,7 +19,7 @@ text1 = """Ich bin ein Hund. Der Hund geht in den Garten.
 data1 = {'text': text1, 'num_sentences': 4, 
 		'num_not_coh_s': 1, 'num_coh_s': 2,
 		'num_clusters': 2, 'num_concepts': 6}
-t_class1 = TextManipulation(data1['text'])
+t_class1 = CoherenceAnalyzer(data1['text'])
 
 # Real example
 text2 = """Eine Erklärung ist genau dann lernförderlich, wenn sie bei allen 
@@ -39,12 +39,12 @@ vielleicht die Erklärung verknüpfen können. Hier kommt dann der Lehrende
  """
 data2 = {'text': text2, 'num_sentences': 11,
 		'num_not_coh_s': 3, 'num_coh_s': 7}
-t_class2 = TextManipulation(data2['text'])
+t_class2 = CoherenceAnalyzer(data2['text'])
 
 # Quatsch Text
 text3 = """assklöj salfjka"""
 data3 = {'text': text3, 'num_sentences': 1}
-t_class3 = TextManipulation(data3['text'])
+t_class3 = CoherenceAnalyzer(data3['text'])
 
 # Real example 2
 text4 = """Schulleistungsstudien sollen die Wissenstände von Schülerinnen 
@@ -69,27 +69,27 @@ werden somit ausgelassen. Deshalb ist es nicht einfach vorauszusehen,
 ob eine Interventionsmaßnahme wirklich Wirkung zeigt."""
 data4 = {'text': text4, 'num_sentences': 12, 
 		'num_not_coh_s': 10, 'num_coh_s': 1}
-t_class4 = TextManipulation(data4['text'])
+t_class4 = CoherenceAnalyzer(data4['text'])
 
 # ************************* TestSuites ****************************************
 
 # Empty dataset
-class TestTextManipulation_0(unittest.TestCase):
+class TestCoherenceAnalyzer_0(unittest.TestCase):
 
 	def test_empty_string(self):
 		with self.assertRaises(ValueError):
-			TextManipulation(data0['text'])
+			CoherenceAnalyzer(data0['text'])
 
 
 # Self made dataset
-class TestTextManipulation_1(unittest.TestCase):
+class TestCoherenceAnalyzer_1(unittest.TestCase):
 
 	def test_text_typeerror(self):
 		"""Raise TypeError if argument is not a string
 		"""
 
 		with self.assertRaises(TypeError):
-			TextManipulation(2)
+			CoherenceAnalyzer(2)
 
 	def test_number_of_sentences(self):
 		self.assertEqual(t_class1.get_num_sentences(), 
@@ -112,7 +112,7 @@ class TestTextManipulation_1(unittest.TestCase):
 			data1['num_concepts'])
 
 # Real dataset
-class TestTextManipulation_2(unittest.TestCase):
+class TestCoherenceAnalyzer_2(unittest.TestCase):
 
 	def test_number_of_sentences(self):
 		self.assertEqual(t_class2.get_num_sentences(), 
@@ -128,7 +128,7 @@ class TestTextManipulation_2(unittest.TestCase):
 
 
 # Quatsch Text
-class TestTextManipulation_3(unittest.TestCase):
+class TestCoherenceAnalyzer_3(unittest.TestCase):
 
 	def test_number_of_sentences(self):
 		self.assertEqual(t_class3.get_num_sentences(),
@@ -139,7 +139,7 @@ class TestTextManipulation_3(unittest.TestCase):
 			t_class3.get_coherence_sentences()
 
 # Real dataset 2
-class TestTextManipulation_4(unittest.TestCase):
+class TestCoherenceAnalyzer_4(unittest.TestCase):
 
 	def test_number_of_sentences(self):
 		self.assertEqual(t_class4.get_num_sentences(), 
@@ -163,11 +163,11 @@ def suite():
 	suite = unittest.TestSuite()
 	
 	# Add test suites
-	suite.addTest(unittest.makeSuite(TestTextManipulation_0))
-	suite.addTest(unittest.makeSuite(TestTextManipulation_1))
-	suite.addTest(unittest.makeSuite(TestTextManipulation_2))
-	suite.addTest(unittest.makeSuite(TestTextManipulation_3))
-	suite.addTest(unittest.makeSuite(TestTextManipulation_4))
+	suite.addTest(unittest.makeSuite(TestCoherenceAnalyzer_0))
+	suite.addTest(unittest.makeSuite(TestCoherenceAnalyzer_1))
+	suite.addTest(unittest.makeSuite(TestCoherenceAnalyzer_2))
+	suite.addTest(unittest.makeSuite(TestCoherenceAnalyzer_3))
+	suite.addTest(unittest.makeSuite(TestCoherenceAnalyzer_4))
 
 	return suite
 

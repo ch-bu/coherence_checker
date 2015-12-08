@@ -8,7 +8,7 @@ file_path = os.path.dirname(os.path.realpath(__file__))
 # RFTagger variables
 tokenizer = file_path + "/RFTagger/cmd/tokenize.perl"
 rftagger = file_path + "/RFTagger/bin/rft-annotate"
-german_par = file_path + "/RFTagger/lib/german-utf8.par"
+german_par = file_path + "/RFTagger/lib/german.par"
 
 # Temporary files
 temp_text = file_path + "/temp/text.txt"
