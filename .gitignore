@@ -1,0 +1,6 @@
+GN_V90_XML/
+mongodb/
+mongodb_server/
+RFTagger/
+__init__.py
+*.pyc
