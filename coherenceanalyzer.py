@@ -8,7 +8,7 @@ import subprocess
 import enchant
 from more_itertools import unique_everseen
 # https://github.com/wroberts/pygermanet#setup
-from pygermanet import load_germanet 
+from pygermanet import load_germanet
 from enchant.checker import SpellChecker
 from collections import Counter
 
@@ -136,8 +136,8 @@ class CoherenceAnalyzer:
 		count = dict(Counter(words))
 
 		# Loop over every combination of words
-		for comb in itertools.combinations(count.keys(), 2):	
-			
+		for comb in itertools.combinations(count.keys(), 2):
+
 			try:
 				# Calculate Jiang-Conrath distance
 				dist = g.synsets(comb[0])[0].dist_jcn(g.synsets(comb[1])[0])
@@ -207,11 +207,6 @@ class CoherenceAnalyzer:
 
 		# Regular Expressions
 		regex = re.compile(r'.*N.Name.*|.*N.Reg.*|.*SYM.Pun.Sent')
-		regex_nome = re.compile(r'.*Nom.*')
-		regex_acc = re.compile(r'.*Acc.*')
-		regex_gen = re.compile(r'.*Gen.*')
-		regex_dat = re.compile(r'.*Dat.*')
-		regex_sym = re.compile(r'.*SYM.*')
 
 		# Filtered tags
 		filtered_tags = [regex.match(tag).string for tag in tags \
