@@ -8,7 +8,7 @@ import subprocess
 import enchant
 from more_itertools import unique_everseen
 # https://github.com/wroberts/pygermanet#setup
-from pygermanet import load_germanet
+#from pygermanet import load_germanet
 from enchant.checker import SpellChecker
 from collections import Counter
 
@@ -205,7 +205,7 @@ class CoherenceAnalyzer:
 		tags = f.readlines()
 		f.close()
 
-		# Regular Expressions
+		# Regular Expression
 		regex = re.compile(r'.*N.Name.*|.*N.Reg.*|.*SYM.Pun.Sent')
 
 		# Filtered tags
@@ -216,19 +216,19 @@ class CoherenceAnalyzer:
 		splited_tags = [str.split(tag, '\t') for tag in filtered_tags]
 		
 		# Load germanet
-		g = load_germanet()
+		#g = load_germanet()
 	
 		# Build Lemmas
-		splited_tags_lemma = [[g.lemmatise(tag[0].decode('utf-8'))[0] \
-		, tag[1]] for tag in splited_tags]
+		#splited_tags_lemma = [[g.lemmatise(tag[0].decode('utf-8'))[0] \
+		#, tag[1]] for tag in splited_tags]
 
 		# Update self.tags
-		tags = splited_tags_lemma
+		#tags = splited_tags_lemma
 
 		# Remove synonyms
-		tags = self.remove_synonyms(tags, g)
+		# tags = self.remove_synonyms(tags, g)
 
-		return tags
+		return splited_tags
 
 
 	def get_sentences(self):
@@ -312,16 +312,14 @@ class CoherenceAnalyzer:
 
 		# List1 one consists of more than 1 element
 		if len(list1) > 1:
-			for x in itertools.permutations(list1, len(list2)):
-
-				for pair in zip(x, list2):
-					pairs.append(pair)
+			for word1 in list1:
+				for word2 in list2:
+					pairs.append((word1, word2))
 
 		# List1 contains 1 element
 		elif len(list1) == 1:
 			for word in list2:
 				pairs.append((list1[0], word))
-
 		return pairs
 
 
@@ -547,19 +545,10 @@ class CoherenceAnalyzer:
 
 # if __name__ == '__main__':
 	
-# 	text = TextManipulation("""Die Polizei hat zwei der mutmaßlichen Attentäter von San Bernardino getötet. 
-# 		Ein Mann und eine Frau seien erschossen worden, sagte der Polizeichef der Stadt, Jarrod Burguan.
-# 		 einen Angaben zufolge waren die beiden ein Paar. Ein dritter mutmaßlicher Verdächtiger sei auf der Flucht von Beamten gestellt worden. 
-# 		Wie genau er in die Tat verwickelt ist, sei noch unklar.
-# 		Die Suche nach den Angreifern hatte San Bernardino am Mittwoch stundenlang gelähmt. """)
+# 	text = CoherenceAnalyzer("""Der italienische Filmemacher Ettore Scola ist tot. 
+# 		Der Regisseur sei am Dienstag im Alter von 84 Jahren in der Poliklinik 
+# 		in Rom gestorben, berichteten italienische Medien. Demnach war Scola in
+# 		 die Abteilung für Herzchirurgie der Klinik eingeliefert worden und 
+# 		 dort am Sonntag ins Koma gefallen.""")
 
-# 	print(text.text)
-# 	print("Count of words: " + str(text.get_words()))
-# 	print("Tags: " + str(text.tags))
-# 	print("Sentences: " + str(text.get_sentences()))
-# 	print("Number of sentences: " + str(text.get_num_sentences()))
-# 	print("Coherence sentences: " + str(text.get_coherence_sentences()))
-# 	print("Clusters: " + str(text.get_clusters()))
-# 	print("Number of clusters: " + str(text.get_num_clusters()))
-# 	print("Concepts: " + str(text.get_num_concepts()))
 # 	print("Word_pairs: " + str(text.get_word_pairs()))
