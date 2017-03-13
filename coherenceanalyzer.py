@@ -7,8 +7,6 @@ import constants
 import subprocess
 import enchant
 from more_itertools import unique_everseen
-# https://github.com/wroberts/pygermanet#setup
-#from pygermanet import load_germanet
 from enchant.checker import SpellChecker
 from collections import Counter
 
