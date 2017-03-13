@@ -102,7 +102,7 @@ def analyzeTextCohesion(text):
 
 
     # Add hyponyms to nouns
-    print([tag['lemma'] for tag in tags if tag['noun'] == True])
+    print([tag['lemma'] for tag in tags if tag['verb'] == True])
 
     return None
 

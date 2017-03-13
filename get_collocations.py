@@ -27,16 +27,16 @@ def get_collocations(file):
 
     bigram_measures = BigramAssocMeasures()
     bigrams = BigramCollocationFinder.from_words(text)
-    bigrams.apply_freq_filter(3)
+    bigrams.apply_freq_filter(4)
 
-    bigrams = bigrams.nbest(bigram_measures.pmi, 40)
+    bigrams = bigrams.nbest(bigram_measures.pmi, 90)
 
     trigram_measures = TrigramAssocMeasures()
     trigrams = TrigramCollocationFinder.from_words(text)
-    trigrams.apply_freq_filter(7)
-    trigrams = trigrams.nbest(trigram_measures.pmi, 40)
+    trigrams.apply_freq_filter(4)
+    trigrams = trigrams.nbest(trigram_measures.pmi, 120)
 
-    print(trigrams)
+    print(bigrams)
     # print(bigrams)
     # for i in trigrams.score_ngrams(trigram_measures.pmi):
     #     print i
