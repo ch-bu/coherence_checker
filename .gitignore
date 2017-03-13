@@ -5,3 +5,5 @@ RFTagger/
 __init__.py
 *.pyc
 temp/
+cohesion.sublime-project
+cohesion.sublime-workspace
