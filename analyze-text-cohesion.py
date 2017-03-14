@@ -6,6 +6,25 @@ import subprocess
 from pygermanet import load_germanet
 from nltk.corpus import stopwords # We might need to remove this line
 
+
+def getPOSElement(element, regex, tags):
+    """Returns an array with a boolean
+    value of the specified element.
+    If element exists, element is true.
+
+    Args:
+        element (String) - Element to be extracted
+        regex (reg)      - Regular Expression
+        tags (Array)     - List of word dictionaries
+    Returns:
+        Array of text elements
+    """
+
+    return [dict(tag.items() + {element: bool(re.match(regex,
+        tag['pos']))}.items()) for tag in tags]
+
+
+
 def analyzeTextCohesion(text):
     """Analyzed the cohesion of a txt.
     Args:
@@ -80,31 +99,17 @@ def analyzeTextCohesion(text):
     # Filtered tags
     tags = [tag for tag in tags if regex.match(tag['pos']) != None]
 
-    # Is Singular?
-    tags = [dict(tag.items() + {'singular': bool(re.match(r'.*Sg',
-        tag['pos']))}.items()) for tag in tags]
-
-    # Is Feminin?
-    tags = [dict(tag.items() + {'feminin': bool(re.match(r'.*Fem',
-        tag['pos']))}.items()) for tag in tags]
-
-    # Is it a noun?
-    tags = [dict(tag.items() + {'noun': bool(re.match(r'.*N.Name.*|.*N.Reg',
-        tag['pos']))}.items()) for tag in tags]
-
-    # Is it a pronoun?
-    tags = [dict(tag.items() + {'pronoun': bool(re.match(r'.*PRO.Pers.*|.*PRO.Dem',
-        tag['pos']))}.items()) for tag in tags]
-
-    # Is it a verb?
-    tags = [dict(tag.items() + {'verb': bool(re.match(r'.*VFIN',
-        tag['pos']))}.items()) for tag in tags]
-
+    # Get specific elements of words
+    tags = getPOSElement('singular', r'.*Sg', tags)
+    tags = getPOSElement('feminin', r'.*Fem', tags)
+    tags = getPOSElement('noun', r'.*N.Name.*|.*N.Reg', tags)
+    tags = getPOSElement('pronoun', r'.*PRO.Pers.*|.*PRO.Dem', tags)
+    tags = getPOSElement('verb', r'.*VFIN', tags)
 
     # Add hyponyms to nouns
-    print([tag['lemma'] for tag in tags if tag['verb'] == True])
+    # print([tag['lemma'] for tag in tags if tag['verb'] == True])
 
-    return None
+    return tags
 
 
 
