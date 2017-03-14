@@ -25,6 +25,53 @@ def getPOSElement(element, regex, tags):
         tag['pos']))}.items()) for tag in tags]
 
 
+def getHyponymPairs(sentences, gn):
+    """Generates all hyponmys of
+    a list of nouns
+
+    Returns:
+        Array of hyponyms in lemma form
+    """
+
+    wordPairs = []
+
+    for val, sentence in enumerate(sentences):
+
+        if val != (len(sentences) - 1):
+            for word in sentences[val]:
+                if word['noun'] is True:
+                    # Init hypo array
+                    hypos = []
+
+                    # Get all synsets of current word
+                    synsets = gn.synsets(word['lemma'])
+
+                    # Get all hyponyms of current word and append
+                    for synset in synsets:
+                        for hypo in synset.hyponyms:
+                            for lemma in hypo.lemmas:
+                                hypos.append(lemma.orthForm)
+
+                    # Get next sentence
+                    nextSentence = [wordNext['lemma']
+                        for wordNext in sentences[val + 1] if wordNext['noun']]
+
+                    # Get nouns of current sentence
+                    sentence = [wordThis['lemma'] for wordThis in sentences[val]
+                        if wordThis['noun']]
+
+                    # Find common elements in hypos and next sentence
+                    intersections = list(set(hypos).intersection(nextSentence))
+
+                    # Loop over every intersections and append
+                    for intersection in intersections:
+                        if intersection != word['orth']:
+                            wordPairs.append([word['lemma'], intersection,
+                                'hyponym'])
+
+    return wordPairs
+
+
 
 def analyzeTextCohesion(text):
     """Analyzed the cohesion of a txt.
@@ -80,7 +127,7 @@ def analyzeTextCohesion(text):
     tags.pop()
 
     # Remove \n from end of tag
-    tags = [[tag[0], tag[1][:-1]] for tag in tags]
+    tags = [[tag[0].decode('utf-8'), tag[1][:-1]] for tag in tags]
 
     ############################################################################
     # Further processing
@@ -112,9 +159,6 @@ def analyzeTextCohesion(text):
     tags = getPOSElement('pronoun', r'.*PRO.Dem', tags)
     tags = getPOSElement('verb', r'.*VFIN', tags)
 
-    # Add hyponyms to nouns
-    # print([tag['lemma'] for tag in tags if tag['noun'] == True])
-
     # Get sentences
     sentences = []
     sentenceArray = []
@@ -126,16 +170,11 @@ def analyzeTextCohesion(text):
             sentences.append(sentenceArray)
             sentenceArray = []
 
-    # for sentence in sentences:
-    #     print([[tag['lemma'], tag['pos']] for tag in sentence if tag['noun'] == True])
-    #     print([[tag['lemma'], tag['pos']] for tag in sentence if tag['pronoun'] == True])
-
-    #     print('\n')
-
     ############################################################################
     # Build word pairs
     ############################################################################
 
+    # Init word pairs array
     wordPairs = []
 
     # Build lexical overlap word pairs
@@ -147,7 +186,13 @@ def analyzeTextCohesion(text):
                 pairArray.append('lexical overlap')
                 wordPairs.append(pairArray)
 
-    return wordPairs
+    # Get hyponym pairs
+    hyponymPairs = getHyponymPairs(sentences, gn)
+
+    # Merge lexical overlaps and hyponyms
+    wordPairs = wordPairs + hyponymPairs
+
+    return None
 
 
 
@@ -175,6 +220,40 @@ text = """Im Folgenden möchte ich euch das Modell
     besserem Verständnis kommt. Die Lernbezogene-Belastung tritt bei einer
     Kombination von hoher intrinsischer und niedriger Extrinsische-Belastung
     zustande.  Demnach beschreibt die Cognitive-Load-Theory die Belastung,
-    der das menschliche Gehirn, besonders das Arbeitsgedächtnis, ausgesetzt."""
+    der das menschliche Gehirn, besonders das Arbeitsgedächtnis, ausgesetzt.
+    Das Spiel läuft. Das Fußballspiel macht heute Spaß."""
 
-print(analyzeTextCohesion(text))
+text2 = """Die Cognitive-Load-Theory geht davon aus, dass der Speicher des
+    Arbeitsgedächtnisses, welchesInformationen verarbeitet, begrenzt ist.
+    Daher muss eine Lehrkraft darauf achten, dass sie die Speicherung nicht
+    überfordert. Dies kann passieren, wenn der Schüler zu vielen Belastungen
+    auf einmal ausgesetzt ist. Man unterscheidet in drei Arten von Belastung.
+    Den germane ( lernbezogenen), den extrinsic und den Intrinsic-Load.
+    Unter dem Extrinsic-Load versteht man jene Belastung, die ausschließlich
+    von außen kommt und den Schüler so am Lernen hindert. Zum Beispiel zu viel
+    Lärm, keine konzentrierte Arbeitsatmosphäre oder Ablenkung anderer Art.
+    Dieser kann vom Lehrenden beeinflusst werden. Der Lehrende sollte darauf
+    achten, diese Belastung so gering wie möglich zu halten, um dem zu
+    Lehrenden ein besseres Lernen zu ermöglichen.  Der Intrinsic-Load
+    bezeichnet die Belastung, die zum Verstehen eines Themas auf den
+    Schüler einwirkt. Sie ist stark abhängig vom Vorwissen des Schülers.
+    Hat ein Schüler also hohes Vorwissen zu einem Thema, welches er
+    bearbeiten muss, ist der Intrinsic-Load gering, d.h. er muss keine
+    hohe kognitive Arbeit aufwenden, um das Thema zu verstehen, da er es
+    leicht mit bereits Gelerntem verknüpfen kann. Der Germane-Load bezeichnet
+    die kognitive Belastung eines Schülers beim Lernen und Verarbeiten des
+    tatsächlich zu lernenden Stoffes. Also den kognitiven Aufwand zur
+    Verknüpfung mit bereits gelernten Themen, dem Verstehen des aktuellen
+    Themas und das Einordnen des Themas in den Gesamtzusammenhang des Faches.
+    Auch diese Belastung ist vom Lehrenden beeinflussbar, zum Beispiel
+    durch klare Erklärungen, stimmige Präsentation und Umfang und
+    Zusammenhang der einzelnen Elemente.  Insgesamt sollte man darauf
+    achten, dass der extrinsic und Intrinsic-Load möglichst gering
+    gehalten werden, während der Germane-Load möglichst hoch sein sollte.
+    Ist eine der anderen beiden Belastungen zu hoch, geht Speicherplatz
+    und somit Kapazität für den Germane-Load verloren, was zu einem
+    ineffizienten Lernen führt. Ein Fahrer geht nach Hause. Der
+    LKW-Fahrer auch. Der Hund geht in das Kino. Dieser Dackel macht einem
+    Probleme."""
+
+print(analyzeTextCohesion(text2))
