@@ -5,6 +5,7 @@ import constants
 import subprocess
 from pygermanet import load_germanet
 from nltk.corpus import stopwords # We might need to remove this line
+import itertools
 
 
 def getPOSElement(element, regex, tags):
@@ -92,8 +93,6 @@ def analyzeTextCohesion(text):
     tags = [{'orth': tag[0], 'lemma': gn.lemmatise(tag[0])[0],
                'pos': tag[1]} for tag in tags]
 
-    # print(tags)
-
     # Filter only relevant tags: Verbs, Nouns, Pronouns
     regex = re.compile(
         r'.*N.Name.*|.*N.Reg.*|.*SYM.Pun.Sent.*|.*VFIN.*|.*PRO.Pers.*|.*PRO.Dem')
@@ -103,14 +102,20 @@ def analyzeTextCohesion(text):
 
     # Get specific elements of words
     tags = getPOSElement('singular', r'.*Sg', tags)
+    tags = getPOSElement('accusative', r'.*N.Reg.Acc', tags)
+    tags = getPOSElement('dative', r'.*N.Reg.Dat', tags)
+    tags = getPOSElement('nominative', r'.*N.Reg.Nom', tags)
+    tags = getPOSElement('genitive', r'.*N.Reg.Gen', tags)
     tags = getPOSElement('feminin', r'.*Fem', tags)
     tags = getPOSElement('noun', r'.*N.Name.*|.*N.Reg', tags)
-    tags = getPOSElement('pronoun', r'.*PRO.Pers.*|.*PRO.Dem', tags)
+    # tags = getPOSElement('pronoun', r'.*PRO.Pers.*|.*PRO.Dem', tags)
+    tags = getPOSElement('pronoun', r'.*PRO.Dem', tags)
     tags = getPOSElement('verb', r'.*VFIN', tags)
 
     # Add hyponyms to nouns
     # print([tag['lemma'] for tag in tags if tag['noun'] == True])
 
+    # Get sentences
     sentences = []
     sentenceArray = []
 
@@ -121,20 +126,35 @@ def analyzeTextCohesion(text):
             sentences.append(sentenceArray)
             sentenceArray = []
 
-    for sentence in sentences:
-        print([tag['lemma'] for tag in sentence if tag['noun'] == True])
-        print([tag['lemma'] for tag in sentence if tag['pronoun'] == True])
+    # for sentence in sentences:
+    #     print([[tag['lemma'], tag['pos']] for tag in sentence if tag['noun'] == True])
+    #     print([[tag['lemma'], tag['pos']] for tag in sentence if tag['pronoun'] == True])
 
-        print('\n')
+    #     print('\n')
 
-    return None
+    ############################################################################
+    # Build word pairs
+    ############################################################################
+
+    wordPairs = []
+
+    # Build lexical overlap word pairs
+    for val, sentence in enumerate(sentences):
+        nouns = [word['lemma'] for word in sentence if word['noun'] == True]
+        for subset in itertools.combinations_with_replacement(nouns, 2):
+            if subset[0] != subset[1]:
+                pairArray = list(subset)
+                pairArray.append('lexical overlap')
+                wordPairs.append(pairArray)
+
+    return wordPairs
 
 
 
 text = """Im Folgenden möchte ich euch das Modell
     der Cognitive-Load-Theory erklären. Diese Theorie beschreibt die beim Lernen
     auftretenden Belastungen, bedingt durch die geringe Speicherkapazität
-    des Arbeitsgedächtnisses. Laut der Cognitive Load Theory gibt es drei
+    des Arbeitsgedächtnisses. Laut der Cognitive-Load-Theory gibt es drei
     verschiedene Formen der Belastung: Die extrinsische Belastung,
     die Intrinsische-Belastung und die lernbezogene Belastung. Hierbei
     beschreibt die Extrinsische-Belastung äußere Einflüsse, die dem
