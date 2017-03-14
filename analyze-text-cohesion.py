@@ -92,6 +92,8 @@ def analyzeTextCohesion(text):
     tags = [{'orth': tag[0], 'lemma': gn.lemmatise(tag[0])[0],
                'pos': tag[1]} for tag in tags]
 
+    # print(tags)
+
     # Filter only relevant tags: Verbs, Nouns, Pronouns
     regex = re.compile(
         r'.*N.Name.*|.*N.Reg.*|.*SYM.Pun.Sent.*|.*VFIN.*|.*PRO.Pers.*|.*PRO.Dem')
@@ -107,14 +109,30 @@ def analyzeTextCohesion(text):
     tags = getPOSElement('verb', r'.*VFIN', tags)
 
     # Add hyponyms to nouns
-    # print([tag['lemma'] for tag in tags if tag['verb'] == True])
+    # print([tag['lemma'] for tag in tags if tag['noun'] == True])
 
-    return tags
+    sentences = []
+    sentenceArray = []
+
+    for word in tags:
+        if word['pos'] != 'SYM.Pun.Sent':
+                sentenceArray.append(word)
+        else:
+            sentences.append(sentenceArray)
+            sentenceArray = []
+
+    for sentence in sentences:
+        print([tag['lemma'] for tag in sentence if tag['noun'] == True])
+        print([tag['lemma'] for tag in sentence if tag['pronoun'] == True])
+
+        print('\n')
+
+    return None
 
 
 
 text = """Im Folgenden möchte ich euch das Modell
-    der Cognitive Load Theory erklären. Diese Theorie beschreibt die beim Lernen
+    der Cognitive-Load-Theory erklären. Diese Theorie beschreibt die beim Lernen
     auftretenden Belastungen, bedingt durch die geringe Speicherkapazität
     des Arbeitsgedächtnisses. Laut der Cognitive Load Theory gibt es drei
     verschiedene Formen der Belastung: Die extrinsische Belastung,
