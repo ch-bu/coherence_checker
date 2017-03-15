@@ -72,6 +72,70 @@ def getHyponymPairs(sentences, gn):
     return wordPairs
 
 
+def get_coreferences(sentences, gn):
+    """Extracts all unambigous
+    coreferences
+
+    Args:
+        sentences (Array) - all sentences of the text
+        gn (Object)       - pygermanet object
+
+    Returns:
+        Array of of pronoun and noun pairs
+    """
+
+    word_pairs = []
+
+    # Loop over every sentence
+    for val, sentence in enumerate(sentences):
+
+        # Do not analyze last sentence
+        if val != (len(sentences) - 1):
+
+            # Get nouns and pronouns of current and next sentence
+            current_sentence = filter(lambda x: x['noun'], sentence)
+            nouns_next_sentence = filter(lambda x: x['noun'],
+                                    sentences[val + 1])
+            pronouns_next_sentence = filter(lambda x: x['pronoun'],
+                                    sentences[val + 1])
+
+            # Loop over every pronoun in next sentence
+            for pronoun in pronouns_next_sentence:
+
+                # Check if gender and numerus is unique among
+                # the nouns within the next sentence
+                unique_next = not any([pronoun['feminin'] == noun['feminin'] and
+                          pronoun['singular'] == noun['singular'] and
+                          pronoun['neutrum'] == noun['neutrum']
+                          for noun in nouns_next_sentence])
+
+
+
+                if unique_next:
+                    # Check if gender and numerus is unique among
+                    # the nouns within the current sentence
+                    unique_current = [pronoun['feminin'] == noun['feminin'] and
+                              pronoun['singular'] == noun['singular'] and
+                              pronoun['neutrum'] == noun['neutrum']
+                              for noun in current_sentence]
+
+                    # We found a candidate
+                    if sum(unique_current) == 1:
+                        # Get index of anaphor parent
+                        anaphor_parent = [i for i, x in enumerate(unique_current) if x][0]
+
+                        # Get lemma of anaphor parent
+                        lemma_parent = current_sentence[anaphor_parent]['lemma']
+
+                        # Create word pairs
+                        pairs = [[lemma_parent, noun['lemma'], 'coreference'] for noun in
+                            nouns_next_sentence]
+
+                        # Append pairs to word pairs
+                        word_pairs = word_pairs + pairs
+
+    return word_pairs
+
 
 def analyzeTextCohesion(text):
     """Analyzed the cohesion of a txt.
@@ -154,9 +218,9 @@ def analyzeTextCohesion(text):
     tags = getPOSElement('nominative', r'.*N.Reg.Nom', tags)
     tags = getPOSElement('genitive', r'.*N.Reg.Gen', tags)
     tags = getPOSElement('feminin', r'.*Fem', tags)
+    tags = getPOSElement('neutrum', r'.*Neut', tags)
     tags = getPOSElement('noun', r'.*N.Name.*|.*N.Reg', tags)
-    # tags = getPOSElement('pronoun', r'.*PRO.Pers.*|.*PRO.Dem', tags)
-    tags = getPOSElement('pronoun', r'.*PRO.Dem', tags)
+    tags = getPOSElement('pronoun', r'.*PRO.Dem.*|.*PRO.Pers', tags)
     tags = getPOSElement('verb', r'.*VFIN', tags)
 
     # Get sentences
@@ -187,12 +251,15 @@ def analyzeTextCohesion(text):
                 wordPairs.append(pairArray)
 
     # Get hyponym pairs
-    hyponymPairs = getHyponymPairs(sentences, gn)
+    hyponym_pairs = getHyponymPairs(sentences, gn)
 
-    print(hyponymPairs)
+    # Get coreference resolutions
+    coreferences = get_coreferences(sentences, gn)
 
     # Merge lexical overlaps and hyponyms
-    wordPairs = wordPairs + hyponymPairs
+    wordPairs = wordPairs + hyponym_pairs + coreferences
+
+    print(wordPairs)
 
     return None
 
@@ -258,4 +325,12 @@ text2 = """Die Cognitive-Load-Theory geht davon aus, dass der Speicher des
     LKW-Fahrer auch. Der Hund geht in das Kino. Dieser Dackel macht einem
     Probleme."""
 
-print(analyzeTextCohesion(text))
+text3 = """Das Wissen zeichnet einen Menschen aus. Sprachkenntnis zum
+    Beispiel ist wichtig, da Menschen sonst nicht Sprechen können. Der Bezug
+    zur Realität ermöglicht dies. Vor allem der Praxisbezug ist dabei wichtig.
+    """
+
+text4 = """Peter kam in das Zimmer herein. Er gab Petra eine Schockolade und
+    ein Stück. Es wurde von Hans gemocht."""
+
+print(analyzeTextCohesion(text4))
