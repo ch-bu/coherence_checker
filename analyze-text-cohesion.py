@@ -189,6 +189,8 @@ def analyzeTextCohesion(text):
     # Get hyponym pairs
     hyponymPairs = getHyponymPairs(sentences, gn)
 
+    print(hyponymPairs)
+
     # Merge lexical overlaps and hyponyms
     wordPairs = wordPairs + hyponymPairs
 
@@ -256,4 +258,4 @@ text2 = """Die Cognitive-Load-Theory geht davon aus, dass der Speicher des
     LKW-Fahrer auch. Der Hund geht in das Kino. Dieser Dackel macht einem
     Probleme."""
 
-print(analyzeTextCohesion(text2))
+print(analyzeTextCohesion(text))
