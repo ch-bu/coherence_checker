@@ -330,7 +330,14 @@ text3 = """Das Wissen zeichnet einen Menschen aus. Sprachkenntnis zum
     zur Realität ermöglicht dies. Vor allem der Praxisbezug ist dabei wichtig.
     """
 
-text4 = """Peter kam in das Zimmer herein. Er gab Petra eine Schockolade und
-    ein Stück. Es wurde von Hans gemocht."""
+text4 = """Peter kam in das Zimmer herein. Er gab Petra eine Schockolade.
+    Sie wurde von Hans gemocht."""
 
-print(analyzeTextCohesion(text4))
+text5 = """Lernen ist für Menschen wichtig. Auswendiglernen kann
+    immer gelingen. Es kann die Liebe sein oder
+    der Knast. """
+
+text6 = """Hans geht in die Schule. Er hat Bäume und Pflanzen. Die
+    Blume zum Beispiel steht im Garten. Die Nelke ist die schönste Pflanze."""
+
+print(analyzeTextCohesion(text6))
