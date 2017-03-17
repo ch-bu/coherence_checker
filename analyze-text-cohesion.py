@@ -6,47 +6,48 @@ import subprocess
 from pygermanet import load_germanet
 from nltk.corpus import stopwords # We might need to remove this line
 import itertools
+# from pymongo import MongoClient
 
 
-def nounify(verb_word):
-    """ Transform a verb to the closest noun: die -> death """
+# def nounify(verb_word):
+#     """ Transform a verb to the closest noun: die -> death """
 
-    gn = load_germanet()
+#     gn = load_germanet()
 
-    verb_synsets = gn.synsets(gn.lemmatise(verb_word)[0], pos="v")
+#     verb_synsets = gn.synsets(gn.lemmatise(verb_word)[0], pos="v")
 
-    # Word not found
-    if not verb_synsets:
-        return []
+#     # Word not found
+#     if not verb_synsets:
+#         return []
 
-    # Get all verb lemmas of the word
-    verb_lemmas = [l.orthForm for s in verb_synsets for l in s.lemmas]
+#     # Get all verb lemmas of the word
+#     verb_lemmas = [l.orthForm for s in verb_synsets for l in s.lemmas]
 
-    # verb_lemmas = [l for s in verb_synsets \
-    #                for l in s.lemmas if s.name.split('.')[1] == 'v']
-    # print(verb_lemmas)
+#     # verb_lemmas = [l for s in verb_synsets \
+#     #                for l in s.lemmas if s.name.split('.')[1] == 'v']
+#     # print(verb_lemmas)
 
-    print(gn.synsets('Haus')[0].lemmas[0].rels())
-    # Get related forms
-    # derivationally_related_forms = [(l, l.derivationally_related_forms()) \
-    #                                 for l in verb_lemmas]
+#     print(gn.synsets('Haus')[0].lemmas[0].rels())
+#     # Get related forms
+#     # derivationally_related_forms = [(l, l.derivationally_related_forms()) \
+#     #                                 for l in verb_lemmas]
 
-    # # filter only the nouns
-    # related_noun_lemmas = [l for drf in derivationally_related_forms \
-    #                        for l in drf[1] if l.synset.name.split('.')[1] == 'n']
+#     # # filter only the nouns
+#     # related_noun_lemmas = [l for drf in derivationally_related_forms \
+#     #                        for l in drf[1] if l.synset.name.split('.')[1] == 'n']
 
-    # # Extract the words from the lemmas
-    # words = [l.name for l in related_noun_lemmas]
-    # len_words = len(words)
+#     # # Extract the words from the lemmas
+#     # words = [l.name for l in related_noun_lemmas]
+#     # len_words = len(words)
 
-    # # Build the result in the form of a list containing tuples (word, probability)
-    # result = [(w, float(words.count(w))/len_words) for w in set(words)]
-    # result.sort(key=lambda w: -w[1])
+#     # # Build the result in the form of a list containing tuples (word, probability)
+#     # result = [(w, float(words.count(w))/len_words) for w in set(words)]
+#     # result.sort(key=lambda w: -w[1])
 
-    # return all the possibilities sorted by probability
-    return None
+#     # return all the possibilities sorted by probability
+#     return None
 
-# print(nounify('arbeitet'))
+# # print(nounify('arbeitet'))
 
 def getPOSElement(element, regex, tags):
     """Returns an array with a boolean
@@ -92,6 +93,10 @@ def getHyponymPairs(sentences, gn):
                             for lemma in hypo.lemmas:
                                 hypos.append(lemma.orthForm)
 
+                    # print(word['lemma'])
+                    # print(hypos)
+                    # print('\n')
+
                     # Get next sentence
                     nextSentence = [wordNext['lemma']
                         for wordNext in sentences[val + 1] if wordNext['noun']]
@@ -128,16 +133,20 @@ def getHypernymPairs(sentences, gn):
             for word in sentences[val]:
                 if word['noun'] is True:
                     # Init hypo array
-                    hypos = []
+                    hypers = []
 
                     # Get all synsets of current word
                     synsets = gn.synsets(word['lemma'])
 
                     # Get all hyponyms of current word and append
                     for synset in synsets:
-                        for hypo in synset.hypernyms:
-                            for lemma in hypo.lemmas:
-                                hypos.append(lemma.orthForm)
+                        for hyper in synset.hypernyms:
+                            for lemma in hyper.lemmas:
+                                hypers.append(lemma.orthForm)
+
+                    # print(word['lemma'])
+                    # print(hypers)
+                    # print('\n')
 
                     # Get next sentence
                     nextSentence = [wordNext['lemma']
@@ -148,7 +157,7 @@ def getHypernymPairs(sentences, gn):
                         if wordThis['noun']]
 
                     # Find common elements in hypos and next sentence
-                    intersections = list(set(hypos).intersection(nextSentence))
+                    intersections = list(set(hypers).intersection(nextSentence))
 
                     # Loop over every intersections and append
                     for intersection in intersections:
@@ -158,6 +167,16 @@ def getHypernymPairs(sentences, gn):
 
     return wordPairs
 
+
+def get_compositions(sentences, gn):
+    """Combine compositions that have
+    the same head
+
+    Returns
+        Array of compositions as word pairs
+    """
+
+    return None
 
 def get_coreferences(sentences, gn):
     """Extracts all unambigous
@@ -196,8 +215,6 @@ def get_coreferences(sentences, gn):
                           pronoun['neutrum'] == noun['neutrum']
                           for noun in nouns_next_sentence])
 
-
-
                 if unique_next:
                     # Check if gender and numerus is unique among
                     # the nouns within the current sentence
@@ -215,8 +232,8 @@ def get_coreferences(sentences, gn):
                         lemma_parent = current_sentence[anaphor_parent]['lemma']
 
                         # Create word pairs
-                        pairs = [[lemma_parent, noun['lemma'], 'coreference'] for noun in
-                            nouns_next_sentence]
+                        pairs = [[lemma_parent, noun['lemma'], 'coreference']
+                            for noun in nouns_next_sentence]
 
                         # Append pairs to word pairs
                         word_pairs = word_pairs + pairs
@@ -346,6 +363,9 @@ def analyzeTextCohesion(text):
     # Get coreference resolutions
     coreferences = get_coreferences(sentences, gn)
 
+    # Get combositional verbs
+    compositions = get_compositions(sentences, gn)
+
     # Merge lexical overlaps and hyponyms
     wordPairs = wordPairs + hyponym_pairs + hypernym_pairs + coreferences
 
@@ -427,10 +447,15 @@ text5 = """Lernen ist für Menschen wichtig. Auswendiglernen kann
     immer gelingen. Es kann die Liebe sein oder
     der Knast. """
 
-text6 = """Hans geht in die Schule. Er hat Bäume und Pflanzen. Die
-    Blume zum Beispiel steht im Garten. Die Nelke ist die schönste Pflanze. Der
-    Lehrer steht im Garten. Diese Lehrkraft macht gerne Scherze."""
+text6 = """Ein Beispiel hierfür war Hans. Er begann letztes Jahr
+    etwas Verrücktes. Zum Beispiel lief er durch ein Haus. Das Lernmaterial
+    steht im Vordergrund. Dieses Material ist in einer Wiese. Das Filmstudio
+    steht im Hotel. Dieses Studio ist in einer Rolle."""
 
 
+print(analyzeTextCohesion(text6))
 
-print(analyzeTextCohesion(text2))
+# client = MongoClient(None, None)
+# germanet_db = client['germanet']
+
+# print(germanet_db.mongo_db.lexunits.find())
