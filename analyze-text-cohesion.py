@@ -8,6 +8,46 @@ from nltk.corpus import stopwords # We might need to remove this line
 import itertools
 
 
+def nounify(verb_word):
+    """ Transform a verb to the closest noun: die -> death """
+
+    gn = load_germanet()
+
+    verb_synsets = gn.synsets(gn.lemmatise(verb_word)[0], pos="v")
+
+    # Word not found
+    if not verb_synsets:
+        return []
+
+    # Get all verb lemmas of the word
+    verb_lemmas = [l.orthForm for s in verb_synsets for l in s.lemmas]
+
+    # verb_lemmas = [l for s in verb_synsets \
+    #                for l in s.lemmas if s.name.split('.')[1] == 'v']
+    # print(verb_lemmas)
+
+    print(gn.synsets('Haus')[0].lemmas[0].rels())
+    # Get related forms
+    # derivationally_related_forms = [(l, l.derivationally_related_forms()) \
+    #                                 for l in verb_lemmas]
+
+    # # filter only the nouns
+    # related_noun_lemmas = [l for drf in derivationally_related_forms \
+    #                        for l in drf[1] if l.synset.name.split('.')[1] == 'n']
+
+    # # Extract the words from the lemmas
+    # words = [l.name for l in related_noun_lemmas]
+    # len_words = len(words)
+
+    # # Build the result in the form of a list containing tuples (word, probability)
+    # result = [(w, float(words.count(w))/len_words) for w in set(words)]
+    # result.sort(key=lambda w: -w[1])
+
+    # return all the possibilities sorted by probability
+    return None
+
+# print(nounify('arbeitet'))
+
 def getPOSElement(element, regex, tags):
     """Returns an array with a boolean
     value of the specified element.
@@ -68,6 +108,53 @@ def getHyponymPairs(sentences, gn):
                         if intersection != word['orth']:
                             wordPairs.append([word['lemma'], intersection,
                                 'hyponym'])
+
+    return wordPairs
+
+
+def getHypernymPairs(sentences, gn):
+    """Generates all hyponmys of
+    a list of nouns
+
+    Returns:
+        Array of hyponyms in lemma form
+    """
+
+    wordPairs = []
+
+    for val, sentence in enumerate(sentences):
+
+        if val != (len(sentences) - 1):
+            for word in sentences[val]:
+                if word['noun'] is True:
+                    # Init hypo array
+                    hypos = []
+
+                    # Get all synsets of current word
+                    synsets = gn.synsets(word['lemma'])
+
+                    # Get all hyponyms of current word and append
+                    for synset in synsets:
+                        for hypo in synset.hypernyms:
+                            for lemma in hypo.lemmas:
+                                hypos.append(lemma.orthForm)
+
+                    # Get next sentence
+                    nextSentence = [wordNext['lemma']
+                        for wordNext in sentences[val + 1] if wordNext['noun']]
+
+                    # Get nouns of current sentence
+                    sentence = [wordThis['lemma'] for wordThis in sentences[val]
+                        if wordThis['noun']]
+
+                    # Find common elements in hypos and next sentence
+                    intersections = list(set(hypos).intersection(nextSentence))
+
+                    # Loop over every intersections and append
+                    for intersection in intersections:
+                        if intersection != word['orth']:
+                            wordPairs.append([word['lemma'], intersection,
+                                'hypernym'])
 
     return wordPairs
 
@@ -253,11 +340,14 @@ def analyzeTextCohesion(text):
     # Get hyponym pairs
     hyponym_pairs = getHyponymPairs(sentences, gn)
 
+    # Get hypernym pairs
+    hypernym_pairs = getHypernymPairs(sentences, gn)
+
     # Get coreference resolutions
     coreferences = get_coreferences(sentences, gn)
 
     # Merge lexical overlaps and hyponyms
-    wordPairs = wordPairs + hyponym_pairs + coreferences
+    wordPairs = wordPairs + hyponym_pairs + hypernym_pairs + coreferences
 
     print(wordPairs)
 
@@ -338,6 +428,9 @@ text5 = """Lernen ist für Menschen wichtig. Auswendiglernen kann
     der Knast. """
 
 text6 = """Hans geht in die Schule. Er hat Bäume und Pflanzen. Die
-    Blume zum Beispiel steht im Garten. Die Nelke ist die schönste Pflanze."""
+    Blume zum Beispiel steht im Garten. Die Nelke ist die schönste Pflanze. Der
+    Lehrer steht im Garten. Diese Lehrkraft macht gerne Scherze."""
 
-print(analyzeTextCohesion(text6))
+
+
+print(analyzeTextCohesion(text2))
