@@ -256,6 +256,9 @@ def analyzeTextCohesion(text):
     # Remove brackets and parenthesis from text
     text = re.sub(r"[\(\[].*?[\)\]]", "", text)
 
+    # Remove trailing white space
+    text = text.strip()
+
     # If text doesn't end with a dot, fill it in
     if not text[-1:] in ['.', '!', '?']:
             text += '.'
@@ -351,7 +354,7 @@ def analyzeTextCohesion(text):
         nouns = [word['lemma'] for word in sentence if word['noun'] == True]
 
         # Append noun if it only occurs once
-        if len(nouns) == 1 and nouns[0]['noun']:
+        if len(nouns) == 1 and word['noun']:
             wordPairs.append([word['lemma'], word['lemma']])
         # If there are multiple nouns append all combinations of nouns
         elif len(nouns) > 1:
@@ -376,7 +379,15 @@ def analyzeTextCohesion(text):
     # Merge lexical overlaps and hyponyms
     wordPairs = wordPairs + hyponym_pairs + hypernym_pairs + coreferences
 
-    print(wordPairs)
+    # Prepare dict to return
+    num_sentences = len(sentences)
+
+    # Get number of concepts
+    num_concepts = len(set([concept['lemma']
+        for concept in tags if concept['noun'] == True]))
+
+    # print(sentences)
+    # print(num_sentences)
 
     return None
 
@@ -458,8 +469,10 @@ text6 = """Ein Beispiel hierfür war Hans. Er begann letztes Jahr
     steht im Vordergrund. Dieses Material ist in einer Wiese. Das Filmstudio
     steht im Hotel. Dieses Studio ist in einer Rolle."""
 
+text7 = """Der Opernsänger war toll. Die Sänger begann mit einem Solo."""
 
-print(analyzeTextCohesion(text5))
+
+print(analyzeTextCohesion(text2))
 
 # client = MongoClient(None, None)
 # germanet_db = client['germanet']
