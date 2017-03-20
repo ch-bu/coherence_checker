@@ -347,12 +347,19 @@ def analyzeTextCohesion(text):
 
     # Build lexical overlap word pairs
     for val, sentence in enumerate(sentences):
+        # Get all nouns
         nouns = [word['lemma'] for word in sentence if word['noun'] == True]
-        for subset in itertools.combinations_with_replacement(nouns, 2):
-            if subset[0] != subset[1]:
-                pairArray = list(subset)
-                pairArray.append('lexical overlap')
-                wordPairs.append(pairArray)
+
+        # Append noun if it only occurs once
+        if len(nouns) == 1 and nouns[0]['noun']:
+            wordPairs.append([word['lemma'], word['lemma']])
+        # If there are multiple nouns append all combinations of nouns
+        elif len(nouns) > 1:
+            for subset in itertools.combinations_with_replacement(nouns, 2):
+                if subset[0] != subset[1]:
+                    pairArray = list(subset)
+                    pairArray.append('lexical overlap')
+                    wordPairs.append(pairArray)
 
     # Get hyponym pairs
     hyponym_pairs = getHyponymPairs(sentences, gn)
@@ -443,17 +450,16 @@ text3 = """Das Wissen zeichnet einen Menschen aus. Sprachkenntnis zum
 text4 = """Peter kam in das Zimmer herein. Er gab Petra eine Schockolade.
     Sie wurde von Hans gemocht."""
 
-text5 = """Lernen ist für Menschen wichtig. Auswendiglernen kann
-    immer gelingen. Es kann die Liebe sein oder
+text5 = """Auswendiglernen ist für Menschen wichtig. Es kann die Liebe sein oder
     der Knast. """
 
 text6 = """Ein Beispiel hierfür war Hans. Er begann letztes Jahr
-    etwas Verrücktes. Zum Beispiel lief er durch ein Haus. Das Lernmaterial
+    etwas. Zum Beispiel lief er durch ein Haus. Das Lernmaterial
     steht im Vordergrund. Dieses Material ist in einer Wiese. Das Filmstudio
     steht im Hotel. Dieses Studio ist in einer Rolle."""
 
 
-print(analyzeTextCohesion(text6))
+print(analyzeTextCohesion(text5))
 
 # client = MongoClient(None, None)
 # germanet_db = client['germanet']
