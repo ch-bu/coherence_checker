@@ -3,6 +3,8 @@
 import re
 import constants
 import subprocess
+from pandas import DataFrame
+import numpy as np
 from pygermanet import load_germanet
 from more_itertools import unique_everseen
 from nltk.corpus import stopwords # We might need to remove this line
@@ -211,19 +213,66 @@ def get_clusters(word_pairs):
         else:
             clusters.append(tempClusters)
 
-    print(len(clusters))
     return len(clusters)
 
 
-def get_compositions(sentences, gn):
-    """Combine compositions that have
-    the same head
+def get_compounds(sentences):
+    """If there is a compound
+    between sentences add these
+    as word pairs.
 
     Returns
-        Array of compositions as word pairs
+        Array of compounds
     """
 
-    return None
+    # Read data
+    data = DataFrame.from_csv('data/compounds.txt', sep='\t', index_col=False)
+
+    # Init word pairs
+    wordPairs = []
+
+    for val, sentence in enumerate(sentences):
+
+        if val != (len(sentences) - 1):
+            for word in sentences[val]:
+                if word['noun'] is True:
+
+                    # Get next sentence
+                    nextSentence = [wordNext['lemma']
+                        for wordNext in sentences[val + 1] if wordNext['noun']]
+
+                    # Get nouns of current sentence
+                    sentence = [wordThis['lemma'] for wordThis in sentences[val]
+                        if wordThis['noun']]
+
+                    # Check if noun is in compound list
+                    word_in_list = data['compound'].str.match(r''
+                        + word['lemma'] + r'$')
+
+                    # If the word has been found in the
+                    # list look inside the next sentence
+                    if word_in_list.any():
+                        # Get index of word
+                        word_index = np.where(word_in_list)[0][0]
+
+                        # Get head word
+                        head = data['head'].where(data['compound']
+                            == word['lemma'], np.nan).max()
+
+                        # Head is in next sentence
+                        if head in nextSentence:
+                            # Get compound word
+                            compound = data['compound'][word_index]
+
+                            # Get index of head in next sentence
+                            index_next_sentence = nextSentence.index(head)
+
+                            # Append to list
+                            wordPairs.append([compound,
+                                nextSentence[index_next_sentence], 'compound'])
+
+    return wordPairs
+
 
 def get_coreferences(sentences, gn):
     """Extracts all unambigous
@@ -402,6 +451,7 @@ def analyzeTextCohesion(text):
 
         # Append noun if it only occurs once
         if len(nouns) == 1 and word['noun']:
+            # Append lonely noun
             wordPairs.append([word['lemma'], word['lemma'], 'lexical overlap'])
         # If there are multiple nouns append all combinations of nouns
         elif len(nouns) > 1:
@@ -411,26 +461,31 @@ def analyzeTextCohesion(text):
                     pairArray.append('lexical overlap')
                     wordPairs.append(pairArray)
 
-    # Get hyremov ponym pairs
+    # Get hypernym hyponym pairs
     hyponym_hyper_pairs = getHypoHyperPairs(sentences, gn)
 
     # Get coreference resolutions
     coreferences = get_coreferences(sentences, gn)
 
-    # Get combositional verbs
-    compositions = get_compositions(sentences, gn)
+    # Get compounds
+    compounds = get_compounds(sentences)
 
-    # Merge lexical overlaps and hyponyms
-    wordPairs = wordPairs + hyponym_hyper_pairs + coreferences
+    # Merge all word pairs
+    wordPairs = wordPairs + hyponym_hyper_pairs + coreferences + compounds
 
-    # Prepare dict to return
+    # Calc number of sentences
     num_sentences = len(sentences)
+
+    # Number of clusters
+    num_clusters = get_clusters(wordPairs)
 
     # Get number of concepts
     num_concepts = len(set([concept['lemma']
         for concept in tags if concept['noun'] == True]))
 
     print(wordPairs)
+    print(num_clusters)
+    print(num_concepts)
 
     return None
 
@@ -464,7 +519,7 @@ text = """Im Folgenden möchte ich euch das Modell
     Das Spiel läuft. Das Fußballspiel macht heute Spaß."""
 
 text2 = """Die Cognitive-Load-Theory geht davon aus, dass der Speicher des
-    Arbeitsgedächtnisses, welchesInformationen verarbeitet, begrenzt ist.
+    Arbeitsgedächtnisses, welches Informationen verarbeitet, begrenzt ist.
     Daher muss eine Lehrkraft darauf achten, dass sie die Speicherung nicht
     überfordert. Dies kann passieren, wenn der Schüler zu vielen Belastungen
     auf einmal ausgesetzt ist. Man unterscheidet in drei Arten von Belastung.
@@ -501,21 +556,20 @@ text3 = """Das Wissen zeichnet einen Menschen aus. Sprachkenntnis zum
     zur Realität ermöglicht dies. Vor allem der Praxisbezug ist dabei wichtig.
     """
 
-text4 = """Peter kam in das Zimmer herein. Er gab Petra eine Schockolade.
+text4 = """Habichtschwamm kam in das Zimmer herein. Dieser Schwamm
+    ist eine tolle Sache. Er gab der Haarzelle eine Schockolade.
     Sie wurde von Hans gemocht."""
-
-text5 = """Auswendiglernen ist für Menschen wichtig. Es kann die Liebe sein oder
-    der Knast. """
 
 text6 = """Ein Beispiel hierfür war Hans. Er begann letztes Jahr
     etwas. Zum Beispiel lief er durch ein Haus. Das Lernmaterial
     steht im Vordergrund. Dieses Material ist in einer Wiese. Das Filmstudio
     steht im Hotel. Dieses Studio ist in einer Rolle."""
 
-text7 = """Der Sänger war toll. Die Opernsänger begann mit einem Solo."""
+text7 = """Der Sänger war toll. Die Opernsänger begann mit einem Solo.
+    Der 10000-Meter-Lauf war toll. Den Lauf machten hunderte Leute mit."""
 
 
-print(analyzeTextCohesion(text4))
+print(analyzeTextCohesion(text2))
 
 # client = MongoClient(None, None)
 # germanet_db = client['germanet']

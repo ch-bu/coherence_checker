@@ -1,4 +1,4 @@
-compound	modifier1	modifier2	head
+compound	modifier1	head
 10000-Meter-Lauf	10000 Meter	Lauf
 100-Meter-Hürdenlauf	100 Meter	Hürdenlauf
 100-Meter-Lauf	100 Meter	Lauf
