@@ -4,6 +4,7 @@ import re
 import constants
 import subprocess
 from pygermanet import load_germanet
+from more_itertools import unique_everseen
 from nltk.corpus import stopwords # We might need to remove this line
 import itertools
 # from pymongo import MongoClient
@@ -166,6 +167,91 @@ def getHypernymPairs(sentences, gn):
                                 'hypernym'])
 
     return wordPairs
+
+def get_clusters(word_pairs):
+    """Calculates the number of computed
+    clusters"""
+
+    # Initialize clusters
+    clusters = []
+    tempClusters = []
+    found = True
+    pairs = word_pairs
+
+    # Loop over every word pair
+    for num in range(0, len(pairs)):
+        # Get link data
+        source = pairs[num][0]
+        target = pairs[num][1]
+
+        # Temporary list
+        tempClusters = [source, target]
+
+        # Found set to true for while loop
+        found = True
+
+        while found:
+            # Found set to false
+            found = False
+
+            # Loop over every word pair again
+            for num_again in range(0, len(pairs)):
+                # Word pairs do not match
+                if num != num_again:
+
+                    # Initialize temporary source and target
+                    tempSource = pairs[num_again][0]
+                    tempTarget = pairs[num_again][1]
+
+                    # Temporary array
+                    tempArray = [tempSource, tempTarget]
+
+                    # Temporary sources and targets in array position
+                    tempPosSource = tempSource in tempClusters
+                    tempPosTarget = tempTarget in tempClusters
+
+                    # Either of the two in in tempClusters
+                    if tempPosSource or tempPosTarget:
+                        # TempSource is in tempClusters
+                        if not tempPosTarget:
+                            found = True
+                            tempClusters.append(tempTarget)
+
+                    # Temp Target is in tempClusters
+                    if tempPosTarget:
+                        # TempSource is not in tempClusters
+                        if not tempPosSource:
+                            found = True
+                            tempClusters.append(tempSource)
+
+        # Remove duplicates from tempClusters
+        tempClusters = list(unique_everseen(tempClusters))
+
+        clusterIn = False
+
+        # Clusters has at least one element
+        if len(clusters) > 0:
+            # Loop over every cluster
+            for cluster in range(0, len(clusters)):
+                # Current Cluster
+                currentCluster = clusters[cluster]
+
+                # Loop over every element in tempClusters
+                for c in range(0, len(tempClusters)):
+                    if tempClusters[c] in currentCluster:
+                        clusterIn = True
+                        break
+
+            # tempClusters does not exist yet in clusters
+            if not clusterIn:
+                clusters.append(tempClusters)
+
+        # Clusters is empty
+        else:
+            clusters.append(tempClusters)
+
+    print(len(clusters))
+    return len(clusters)
 
 
 def get_compositions(sentences, gn):
@@ -364,7 +450,7 @@ def analyzeTextCohesion(text):
                     pairArray.append('lexical overlap')
                     wordPairs.append(pairArray)
 
-    # Get hyponym pairs
+    # Get hyremov ponym pairs
     hyponym_pairs = getHyponymPairs(sentences, gn)
 
     # Get hypernym pairs
@@ -386,8 +472,10 @@ def analyzeTextCohesion(text):
     num_concepts = len(set([concept['lemma']
         for concept in tags if concept['noun'] == True]))
 
-    # print(sentences)
+    print(get_clusters(wordPairs))
     # print(num_sentences)
+    #
+    print(wordPairs)
 
     return None
 
@@ -450,7 +538,7 @@ text2 = """Die Cognitive-Load-Theory geht davon aus, dass der Speicher des
     Ist eine der anderen beiden Belastungen zu hoch, geht Speicherplatz
     und somit Kapazität für den Germane-Load verloren, was zu einem
     ineffizienten Lernen führt. Ein Fahrer geht nach Hause. Der
-    LKW-Fahrer auch. Der Hund geht in das Kino. Dieser Dackel macht einem
+    LKW-Fahrer macht einen Spaß. Der Hund geht in das Kino. Dieser Dackel macht einem
     Probleme."""
 
 text3 = """Das Wissen zeichnet einen Menschen aus. Sprachkenntnis zum
