@@ -67,8 +67,8 @@ def getPOSElement(element, regex, tags):
         tag['pos']))}.items()) for tag in tags]
 
 
-def getHyponymPairs(sentences, gn):
-    """Generates all hyponmys of
+def getHypoHyperPairs(sentences, gn):
+    """Generates all hyponmys and hypernyms of
     a list of nouns
 
     Returns:
@@ -82,58 +82,8 @@ def getHyponymPairs(sentences, gn):
         if val != (len(sentences) - 1):
             for word in sentences[val]:
                 if word['noun'] is True:
-                    # Init hypo array
+                    # Init variables
                     hypos = []
-
-                    # Get all synsets of current word
-                    synsets = gn.synsets(word['lemma'])
-
-                    # Get all hyponyms of current word and append
-                    for synset in synsets:
-                        for hypo in synset.hyponyms:
-                            for lemma in hypo.lemmas:
-                                hypos.append(lemma.orthForm)
-
-                    # print(word['lemma'])
-                    # print(hypos)
-                    # print('\n')
-
-                    # Get next sentence
-                    nextSentence = [wordNext['lemma']
-                        for wordNext in sentences[val + 1] if wordNext['noun']]
-
-                    # Get nouns of current sentence
-                    sentence = [wordThis['lemma'] for wordThis in sentences[val]
-                        if wordThis['noun']]
-
-                    # Find common elements in hypos and next sentence
-                    intersections = list(set(hypos).intersection(nextSentence))
-
-                    # Loop over every intersections and append
-                    for intersection in intersections:
-                        if intersection != word['orth']:
-                            wordPairs.append([word['lemma'], intersection,
-                                'hyponym'])
-
-    return wordPairs
-
-
-def getHypernymPairs(sentences, gn):
-    """Generates all hyponmys of
-    a list of nouns
-
-    Returns:
-        Array of hyponyms in lemma form
-    """
-
-    wordPairs = []
-
-    for val, sentence in enumerate(sentences):
-
-        if val != (len(sentences) - 1):
-            for word in sentences[val]:
-                if word['noun'] is True:
-                    # Init hypo array
                     hypers = []
 
                     # Get all synsets of current word
@@ -141,13 +91,14 @@ def getHypernymPairs(sentences, gn):
 
                     # Get all hyponyms of current word and append
                     for synset in synsets:
+                        # Hyponyms
+                        for hypo in synset.hyponyms:
+                            for lemma in hypo.lemmas:
+                                hypos.append(lemma.orthForm)
+                        # Hypernyms
                         for hyper in synset.hypernyms:
                             for lemma in hyper.lemmas:
                                 hypers.append(lemma.orthForm)
-
-                    # print(word['lemma'])
-                    # print(hypers)
-                    # print('\n')
 
                     # Get next sentence
                     nextSentence = [wordNext['lemma']
@@ -158,15 +109,25 @@ def getHypernymPairs(sentences, gn):
                         if wordThis['noun']]
 
                     # Find common elements in hypos and next sentence
-                    intersections = list(set(hypers).intersection(nextSentence))
+                    intersections_hypo = list(set(hypos).intersection(nextSentence))
+
+                    # Find common elements in hypos and next sentence
+                    intersections_hyper = list(set(hypers).intersection(nextSentence))
 
                     # Loop over every intersections and append
-                    for intersection in intersections:
+                    for intersection in intersections_hypo:
+                        if intersection != word['orth']:
+                            wordPairs.append([word['lemma'], intersection,
+                                'hyponym'])
+
+                    # Loop over every intersections and append
+                    for intersection in intersections_hyper:
                         if intersection != word['orth']:
                             wordPairs.append([word['lemma'], intersection,
                                 'hypernym'])
 
     return wordPairs
+
 
 def get_clusters(word_pairs):
     """Calculates the number of computed
@@ -441,7 +402,7 @@ def analyzeTextCohesion(text):
 
         # Append noun if it only occurs once
         if len(nouns) == 1 and word['noun']:
-            wordPairs.append([word['lemma'], word['lemma']])
+            wordPairs.append([word['lemma'], word['lemma'], 'lexical overlap'])
         # If there are multiple nouns append all combinations of nouns
         elif len(nouns) > 1:
             for subset in itertools.combinations_with_replacement(nouns, 2):
@@ -451,10 +412,7 @@ def analyzeTextCohesion(text):
                     wordPairs.append(pairArray)
 
     # Get hyremov ponym pairs
-    hyponym_pairs = getHyponymPairs(sentences, gn)
-
-    # Get hypernym pairs
-    hypernym_pairs = getHypernymPairs(sentences, gn)
+    hyponym_hyper_pairs = getHypoHyperPairs(sentences, gn)
 
     # Get coreference resolutions
     coreferences = get_coreferences(sentences, gn)
@@ -463,7 +421,7 @@ def analyzeTextCohesion(text):
     compositions = get_compositions(sentences, gn)
 
     # Merge lexical overlaps and hyponyms
-    wordPairs = wordPairs + hyponym_pairs + hypernym_pairs + coreferences
+    wordPairs = wordPairs + hyponym_hyper_pairs + coreferences
 
     # Prepare dict to return
     num_sentences = len(sentences)
@@ -472,9 +430,6 @@ def analyzeTextCohesion(text):
     num_concepts = len(set([concept['lemma']
         for concept in tags if concept['noun'] == True]))
 
-    print(get_clusters(wordPairs))
-    # print(num_sentences)
-    #
     print(wordPairs)
 
     return None
@@ -557,10 +512,10 @@ text6 = """Ein Beispiel hierfür war Hans. Er begann letztes Jahr
     steht im Vordergrund. Dieses Material ist in einer Wiese. Das Filmstudio
     steht im Hotel. Dieses Studio ist in einer Rolle."""
 
-text7 = """Der Opernsänger war toll. Die Sänger begann mit einem Solo."""
+text7 = """Der Sänger war toll. Die Opernsänger begann mit einem Solo."""
 
 
-print(analyzeTextCohesion(text2))
+print(analyzeTextCohesion(text4))
 
 # client = MongoClient(None, None)
 # germanet_db = client['germanet']
