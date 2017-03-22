@@ -483,11 +483,10 @@ def analyzeTextCohesion(text):
     num_concepts = len(set([concept['lemma']
         for concept in tags if concept['noun'] == True]))
 
-    print(wordPairs)
-    print(num_clusters)
-    print(num_concepts)
-
-    return None
+    return {'word_pairs': wordPairs,
+             'numSentences': num_sentences,
+             'numConcepts': num_concepts,
+             'numClusters': num_clusters}
 
 
 
