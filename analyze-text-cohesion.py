@@ -231,45 +231,73 @@ def get_compounds(sentences):
     # Init word pairs
     wordPairs = []
 
+    # Loop over every sentence
     for val, sentence in enumerate(sentences):
+        # Loop over every word in current sentence
+        for word in sentences[val]:
+            if word['noun'] is True:
+                # Get nouns of current sentence
+                nouns_current_sentence = [wordThis['lemma']
+                    for wordThis in sentences[val] if wordThis['noun']]
 
-        if val != (len(sentences) - 1):
-            for word in sentences[val]:
-                if word['noun'] is True:
+                # Check if noun is in compound list
+                word_in_list = data['compound'].str.match(r''
+                    + word['lemma'] + r'$')
 
-                    # Get next sentence
-                    nextSentence = [wordNext['lemma']
-                        for wordNext in sentences[val + 1] if wordNext['noun']]
+                # Current word has been found
+                # in the compound list
+                if word_in_list.any():
+                    # Get index of word
+                    word_index = np.where(word_in_list)[0][0]
 
-                    # Get nouns of current sentence
-                    sentence = [wordThis['lemma'] for wordThis in sentences[val]
-                        if wordThis['noun']]
+                    # Get head of compound
+                    head = data['head'].where(data['compound'] ==
+                        word['lemma'], np.nan).max()
 
-                    # Check if noun is in compound list
-                    word_in_list = data['compound'].str.match(r''
-                        + word['lemma'] + r'$')
-
-                    # If the word has been found in the
-                    # list look inside the next sentence
-                    if word_in_list.any():
-                        # Get index of word
-                        word_index = np.where(word_in_list)[0][0]
-
-                        # Get head word
-                        head = data['head'].where(data['compound']
-                            == word['lemma'], np.nan).max()
+                    # Is current sentence not the last
+                    # sentence? This is important, otherwise
+                    # we would compare the compound to a head
+                    # in a sentence that doesn't exist.
+                    if val != (len(sentences) - 1):
+                        # Get nouns of current next sentence
+                        nouns_next_sentence = [wordNext['lemma']
+                            for wordNext in sentences[val + 1]
+                                if wordNext['noun']]
 
                         # Head is in next sentence
-                        if head in nextSentence:
+                        if head in nouns_next_sentence:
                             # Get compound word
                             compound = data['compound'][word_index]
 
                             # Get index of head in next sentence
-                            index_next_sentence = nextSentence.index(head)
+                            index_next_sentence = nouns_next_sentence.index(head)
 
                             # Append to list
                             wordPairs.append([compound,
-                                nextSentence[index_next_sentence], 'compound'])
+                                nouns_next_sentence[index_next_sentence],
+                                    'compound'])
+
+                    # Make sure that I do not append a word pair
+                    # that links the first and the last sentence.
+                    # Only link wordpairs within the text.
+                    if (val -1) > -1:
+                        # Get nouns of previous sentence
+                        nouns_previous_sentence = [wordNext['lemma']
+                            for wordNext in sentences[val - 1]
+                                if wordNext['noun']]
+
+                        # Head occurs in previous sentence
+                        if head in nouns_previous_sentence:
+                            # Get compound word
+                            compound = data['compound'][word_index]
+
+                            # Get index of head in next sentence
+                            index_previous_sentence = nouns_previous_sentence.index(head)
+
+                            # Append to list
+                            wordPairs.append([compound,
+                                nouns_previous_sentence[index_previous_sentence],
+                                    'compound'])
 
     return wordPairs
 
@@ -557,7 +585,8 @@ text3 = """Das Wissen zeichnet einen Menschen aus. Sprachkenntnis zum
 
 text4 = """Habichtschwamm kam in das Zimmer herein. Dieser Schwamm
     ist eine tolle Sache. Er gab der Haarzelle eine Schockolade.
-    Sie wurde von Hans gemocht."""
+    Sie wurde von Hans gemocht. Die Wohnung war sehr geräumig.
+    Ungewöhnlich für eine 3-Zimmer-Wohnung."""
 
 text6 = """Ein Beispiel hierfür war Hans. Er begann letztes Jahr
     etwas. Zum Beispiel lief er durch ein Haus. Das Lernmaterial
@@ -567,10 +596,8 @@ text6 = """Ein Beispiel hierfür war Hans. Er begann letztes Jahr
 text7 = """Der Sänger war toll. Die Opernsänger begann mit einem Solo.
     Der 10000-Meter-Lauf war toll. Den Lauf machten hunderte Leute mit."""
 
+text8 = """Es gibt verschiedene Pflanzen auf der Welt.
+    Baumwollpflanzen beispielsweise werden im Haus benutzt.
+    Sie dienen dienen dem Spaß."""
 
-print(analyzeTextCohesion(text2))
-
-# client = MongoClient(None, None)
-# germanet_db = client['germanet']
-
-# print(germanet_db.mongo_db.lexunits.find())
+print(analyzeTextCohesion(text4))
