@@ -8,6 +8,7 @@ import numpy as np
 from pygermanet import load_germanet
 from more_itertools import unique_everseen
 from nltk.corpus import stopwords # We might need to remove this line
+from nltk.stem.snowball import GermanStemmer
 import itertools
 # from pymongo import MongoClient
 
@@ -302,6 +303,70 @@ def get_compounds(sentences):
     return wordPairs
 
 
+def get_stem_relations(sentences, gn):
+    """Gets verb-noun relations
+    between two sentences.
+
+    Returns
+        Array of word-pairs between two sentences
+    """
+
+    # Init word pairs
+    word_pairs = []
+
+    # Init stemmer
+    stemmer = GermanStemmer(ignore_stopwords=True)
+
+    # Loop over every sentence
+    for val, sentence in enumerate(sentences):
+        # Is current sentence not the last
+        # sentence? If so carry on
+        if val != (len(sentences) - 1):
+            # Get stems of all words in current sentence
+            stems_next_sentence = map(lambda x: stemmer.stem(x['lemma']),
+                sentences[val + 1])
+
+            # Words next sentence
+            words_next_sentence = map(lambda x: x['lemma'],
+                sentences[val + 1])
+
+            # Loop over every word in current sentece
+            for word in sentences[val]:
+
+                # Stem of current word
+                stem_current_word = stemmer.stem(word['lemma'])
+
+                # Is the stemmed word in the next sentence, great.
+                # If word is a lame 'sein', ignore it
+                if (stem_current_word in stems_next_sentence) and word['lemma'] != 'sein':
+
+                    # Get index of stem that is related to current word
+                    index_word_next_sentence = stems_next_sentence.index(stem_current_word)
+
+                    # Corresponding word in next sentence
+                    corresponding_word = words_next_sentence[index_word_next_sentence]
+
+                    # Only add word pairs if verb or noun
+                    if word['noun'] or word['verb']:
+
+                        # Get dictionary of word in next sentence
+                        dict_next = sentences[val + 1][index_word_next_sentence]
+
+                        # We do not want to combine words
+                        # that have the same grammatical function
+                        # A noun should not be combined with a noun
+                        # We are only interested in verb-noun relations
+                        if (word['noun'] != dict_next['noun']) and \
+                           (word['verb'] != dict_next['verb']):
+
+                            print("%s ist mit %s verbunden" % (word['lemma'],
+                                corresponding_word))
+
+
+    return None
+
+
+
 def get_coreferences(sentences, gn):
     """Extracts all unambigous
     coreferences
@@ -498,6 +563,9 @@ def analyzeTextCohesion(text):
     # Get compounds
     compounds = get_compounds(sentences)
 
+    # Get stem relations
+    stem_relations = get_stem_relations(sentences, gn)
+
     # Merge all word pairs
     wordPairs = wordPairs + hyponym_hyper_pairs + coreferences + compounds
 
@@ -511,10 +579,11 @@ def analyzeTextCohesion(text):
     num_concepts = len(set([concept['lemma']
         for concept in tags if concept['noun'] == True]))
 
-    return {'word_pairs': wordPairs,
-             'numSentences': num_sentences,
-             'numConcepts': num_concepts,
-             'numClusters': num_clusters}
+    # return {'word_pairs': wordPairs,
+    #          'numSentences': num_sentences,
+    #          'numConcepts': num_concepts,
+    #          'numClusters': num_clusters}
+    return None
 
 
 
@@ -600,4 +669,9 @@ text8 = """Es gibt verschiedene Pflanzen auf der Welt.
     Baumwollpflanzen beispielsweise werden im Haus benutzt.
     Sie dienen dienen dem Spaß."""
 
-print(analyzeTextCohesion(text4))
+text9 = """Es belastet mich, dass du mit jemand anderem schläfst.
+    Der Schlaf ist keine Belastung für mich."""
+
+text10 = """Die CLT geht davon aus, dass Lernen mit kognitiver Belastung verbunden ist, und beschreibt, wodurch das Lernen erleichtert bzw. erschwert werden kann. Sie schreibt dem Arbeitsgedächtnis eine besonders wichtige Funktion beim Lernen und beim Wissenserwerb zu. Das Arbeitsgedächtnis ist für Problemlösungs- und Informationsverarbeitungsprozesse verantwortlich. Es wird davon ausgegangen, dass die Kapazität des Arbeitsgedächtnisses begrenzt ist und nur eine bestimmte Menge an Informationen aufrechterhalten werden kann. Eine weitere Annahme besagt, dass Menschen das Wissen in so genannten Schemata speichern. So werden beim Lernen sowohl neue Schemata konstruiert als auch neues Wissen mit bereits vorhandenen Schemata verknüpft. Es ist wichtig, dass das Arbeitsgedächtnis genügend verfügbare Kapazität aufweist und kognitiv nicht überlastet wird, um den Schemaerwerb und somit ein effektives Lernen zu ermöglichen."""
+
+print(analyzeTextCohesion(text9))
