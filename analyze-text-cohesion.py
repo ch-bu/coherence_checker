@@ -227,7 +227,8 @@ def get_compounds(sentences):
     """
 
     # Read data
-    data = DataFrame.from_csv('data/compounds.txt', sep='\t', index_col=False)
+    data = DataFrame.from_csv('data/compounds.txt', sep='\t', index_col=False,
+        encoding='utf-8')
 
     # Init word pairs
     wordPairs = []
@@ -699,5 +700,7 @@ text9 = """Es belastet mich, dass Michael mit jemand anderem schläfst.
     Es ist so bieder, dass Kobold jetzt arbeitet. Die Arbeit passt nicht
     zu ihm und er ist kein Biedermann."""
 
+text10 = """Das Spiel läuft. Das Fußballspiel macht heute Spaß.
+    Das Spiel spielt sich am Bahnhof ab."""
 
-print(analyzeTextCohesion(text7))
+print(analyzeTextCohesion(text10))
