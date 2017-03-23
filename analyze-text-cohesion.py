@@ -330,6 +330,14 @@ def get_stem_relations(sentences, gn):
             words_next_sentence = map(lambda x: x['lemma'],
                 sentences[val + 1])
 
+            # Nouns in next sentence
+            nouns_next_sentence = [word['lemma'] for word in sentences[val + 1]
+                if word['noun']]
+
+            # Nouns of current sentence
+            nouns_current_sentence = [word['lemma'] for word in sentence
+                if word['noun']]
+
             # Loop over every word in current sentece
             for word in sentences[val]:
 
@@ -356,14 +364,29 @@ def get_stem_relations(sentences, gn):
                         # that have the same grammatical function
                         # A noun should not be combined with a noun
                         # We are only interested in verb-noun relations
-                        if (word['noun'] != dict_next['noun']) and \
-                           (word['verb'] != dict_next['verb']):
+                        if word['verb'] and dict_next['noun']:
+                            # Get all combinations of corresponding noun
+                            # in next sentence an all nouns in current sentence
+                            verb_noun_combinations = [[corresponding_word,
+                                noun, 'verb-noun-relation'] for noun in
+                                    nouns_current_sentence]
 
-                            print("%s ist mit %s verbunden" % (word['lemma'],
-                                corresponding_word))
+                            # Append to word pairs
+                            word_pairs = word_pairs + verb_noun_combinations
 
+                        # Current word is noun and corresponding word is
+                        # verb
+                        elif word['noun'] and dict_next['verb']:
+                            # Get all combinations of noun in this sentence
+                            # and all nouns in next sentence
+                            noun_verb_combinations = [[word['lemma'], noun,
+                                'verb-noun-relation'] for noun in
+                                    nouns_next_sentence]
 
-    return None
+                            # Append to word pairs
+                            word_pairs = word_pairs + noun_verb_combinations
+
+    return word_pairs
 
 
 
@@ -567,7 +590,8 @@ def analyzeTextCohesion(text):
     stem_relations = get_stem_relations(sentences, gn)
 
     # Merge all word pairs
-    wordPairs = wordPairs + hyponym_hyper_pairs + coreferences + compounds
+    wordPairs = wordPairs + hyponym_hyper_pairs + coreferences + compounds + \
+        stem_relations
 
     # Calc number of sentences
     num_sentences = len(sentences)
@@ -579,11 +603,10 @@ def analyzeTextCohesion(text):
     num_concepts = len(set([concept['lemma']
         for concept in tags if concept['noun'] == True]))
 
-    # return {'word_pairs': wordPairs,
-    #          'numSentences': num_sentences,
-    #          'numConcepts': num_concepts,
-    #          'numClusters': num_clusters}
-    return None
+    return {'word_pairs': wordPairs,
+             'numSentences': num_sentences,
+             'numConcepts': num_concepts,
+             'numClusters': num_clusters}
 
 
 
@@ -669,9 +692,12 @@ text8 = """Es gibt verschiedene Pflanzen auf der Welt.
     Baumwollpflanzen beispielsweise werden im Haus benutzt.
     Sie dienen dienen dem Spaß."""
 
-text9 = """Es belastet mich, dass du mit jemand anderem schläfst.
-    Der Schlaf ist keine Belastung für mich."""
+text9 = """Es belastet mich, dass Michael mit jemand anderem schläfst.
+    Der Schlaf ist keine Belastung für mich. Franz brütet Nägel in die Wand.
+    Die Brut könnte er sich eigentlich sparen, da er ja schon ein
+    Haus hat. Hans geht durch das Haus. Sein Gang ist wie ein Gemälde.
+    Es ist so bieder, dass Kobold jetzt arbeitet. Die Arbeit passt nicht
+    zu ihm und er ist kein Biedermann."""
 
-text10 = """Die CLT geht davon aus, dass Lernen mit kognitiver Belastung verbunden ist, und beschreibt, wodurch das Lernen erleichtert bzw. erschwert werden kann. Sie schreibt dem Arbeitsgedächtnis eine besonders wichtige Funktion beim Lernen und beim Wissenserwerb zu. Das Arbeitsgedächtnis ist für Problemlösungs- und Informationsverarbeitungsprozesse verantwortlich. Es wird davon ausgegangen, dass die Kapazität des Arbeitsgedächtnisses begrenzt ist und nur eine bestimmte Menge an Informationen aufrechterhalten werden kann. Eine weitere Annahme besagt, dass Menschen das Wissen in so genannten Schemata speichern. So werden beim Lernen sowohl neue Schemata konstruiert als auch neues Wissen mit bereits vorhandenen Schemata verknüpft. Es ist wichtig, dass das Arbeitsgedächtnis genügend verfügbare Kapazität aufweist und kognitiv nicht überlastet wird, um den Schemaerwerb und somit ein effektives Lernen zu ermöglichen."""
 
-print(analyzeTextCohesion(text9))
+print(analyzeTextCohesion(text7))
