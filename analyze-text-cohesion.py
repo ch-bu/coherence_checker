@@ -239,45 +239,49 @@ def get_compounds(sentences):
                     # we would compare the compound to a head
                     # in a sentence that doesn't exist.
                     if val != (len(sentences) - 1):
-                        # Get nouns of current next sentence
-                        nouns_next_sentence = [wordNext['lemma']
-                            for wordNext in sentences[val + 1]
-                                if wordNext['noun']]
+                        # Get nouns and words of next sentence
+                        words_next_sentence = filter(lambda x: x['noun'],
+                                sentences[val + 1])
+                        nouns_next_sentence = map(lambda x: x['lemma'],
+                                words_next_sentence)
 
                         # Head is in next sentence
                         if head in nouns_next_sentence:
-                            # Get compound word
-                            compound = data['compound'][word_index]
-
                             # Get index of head in next sentence
                             index_next_sentence = nouns_next_sentence.index(head)
 
                             # Append to list
-                            wordPairs.append([compound,
-                                nouns_next_sentence[index_next_sentence],
-                                    'compound'])
+                            wordPairs.append({'source': {'word': word['orth'],
+                                'lemma': word['lemma'], 'sentence': val},
+                                'target': {'word': words_next_sentence[index_next_sentence]['orth'],
+                                'lemma': words_next_sentence[index_next_sentence]['lemma'], 'sentence': val + 1},
+                                'device': 'compound subordination'})
 
                     # Make sure that I do not append a word pair
                     # that links the first and the last sentence.
                     # Only link wordpairs within the text.
                     if (val -1) > -1:
                         # Get nouns of previous sentence
-                        nouns_previous_sentence = [wordNext['lemma']
-                            for wordNext in sentences[val - 1]
-                                if wordNext['noun']]
+                        # nouns_previous_sentence = [wordNext['lemma']
+                        #     for wordNext in sentences[val - 1]
+                        #         if wordNext['noun']]
+                        words_previous_sentence = filter(lambda x: x['noun'],
+                                sentences[val - 1])
+                        nouns_previous_sentence = map(lambda x: x['lemma'],
+                                words_previous_sentence)
 
                         # Head occurs in previous sentence
                         if head in nouns_previous_sentence:
-                            # Get compound word
-                            compound = data['compound'][word_index]
-
                             # Get index of head in next sentence
                             index_previous_sentence = nouns_previous_sentence.index(head)
 
                             # Append to list
-                            wordPairs.append([compound,
-                                nouns_previous_sentence[index_previous_sentence],
-                                    'compound'])
+                            wordPairs.append({'source': {'word':
+                                    words_previous_sentence[index_previous_sentence]['orth'],
+                                'lemma': words_previous_sentence[index_previous_sentence]['lemma'], 'sentence': val -1},
+                                'target': {'word': word['orth'],
+                                'lemma': word['lemma'], 'sentence': val},
+                                'device': 'compound superordination'})
 
     return wordPairs
 
@@ -687,6 +691,6 @@ text9 = """Es belastet mich, dass Michael mit jemand anderem schläfst.
     Es ist so bieder, dass Kobold jetzt arbeitet. Die Arbeit passt nicht
     zu ihm und er ist kein Biedermann."""
 
-text10 = """Die Dackel gehen in den Wald. Dieser Hund ist ein großes Tier."""
+text10 = """Die Spieler gehen in den Wald. Der Fußballspieler ist von Bayern."""
 
 print(analyzeTextCohesion(text10))
