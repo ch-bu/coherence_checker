@@ -309,37 +309,30 @@ def get_stem_relations(sentences, gn):
             stems_next_sentence = map(lambda x: stemmer.stem(x['lemma']),
                 sentences[val + 1])
 
-            # Words next sentence
-            words_next_sentence = map(lambda x: x['lemma'],
-                sentences[val + 1])
-
             # Nouns in next sentence
             nouns_next_sentence = [word['lemma'] for word in sentences[val + 1]
                 if word['noun']]
 
             # Nouns of current sentence
-            nouns_current_sentence = [word['lemma'] for word in sentence
+            words_current_sentence = [word for word in sentence
                 if word['noun']]
 
             # Loop over every word in current sentece
             for word in sentences[val]:
-
                 # Stem of current word
                 stem_current_word = stemmer.stem(word['lemma'])
 
                 # Is the stemmed word in the next sentence, great.
                 # If word is a lame 'sein', ignore it
                 if (stem_current_word in stems_next_sentence) and word['lemma'] != 'sein':
-
                     # Get index of stem that is related to current word
                     index_word_next_sentence = stems_next_sentence.index(stem_current_word)
 
                     # Corresponding word in next sentence
-                    corresponding_word = words_next_sentence[index_word_next_sentence]
+                    corresponding_word = sentences[val + 1][index_word_next_sentence]
 
                     # Only add word pairs if verb or noun
                     if word['noun'] or word['verb']:
-
                         # Get dictionary of word in next sentence
                         dict_next = sentences[val + 1][index_word_next_sentence]
 
@@ -350,27 +343,30 @@ def get_stem_relations(sentences, gn):
                         if word['verb'] and dict_next['noun']:
                             # Get all combinations of corresponding noun
                             # in next sentence an all nouns in current sentence
-                            verb_noun_combinations = [[corresponding_word,
-                                noun, 'verb-noun-relation'] for noun in
-                                    nouns_current_sentence]
-
-                            # Append to word pairs
-                            word_pairs = word_pairs + verb_noun_combinations
+                            for wordCurrent in words_current_sentence:
+                                # Append to list
+                                word_pairs.append({'source': {'word': corresponding_word['orth'],
+                                    'lemma': corresponding_word['lemma'], 'sentence': val},
+                                    'target': {'word': wordCurrent['orth'],
+                                    'lemma': wordCurrent['lemma'], 'sentence': val + 1},
+                                    'device': 'verb noun relation'})
 
                         # Current word is noun and corresponding word is
                         # verb
                         elif word['noun'] and dict_next['verb']:
-                            # Get all combinations of noun in this sentence
-                            # and all nouns in next sentence
-                            noun_verb_combinations = [[word['lemma'], noun,
-                                'verb-noun-relation'] for noun in
-                                    nouns_next_sentence]
-
-                            # Append to word pairs
-                            word_pairs = word_pairs + noun_verb_combinations
+                            # Get all combinations of of noun in this sentence
+                            # with nouns in next sentence
+                            for wordNext in sentences[val + 1]:
+                                # Do not use stupid 'sein'
+                                if wordNext['noun']:
+                                    # Append to list
+                                    word_pairs.append({'source': {'word': word['orth'],
+                                        'lemma': word['lemma'], 'sentence': val},
+                                        'target': {'word': wordNext['orth'],
+                                        'lemma': wordNext['lemma'], 'sentence': val + 1},
+                                        'device': 'noun verb relation'})
 
     return word_pairs
-
 
 
 def get_coreferences(sentences, gn):
@@ -554,7 +550,7 @@ def analyzeTextCohesion(text):
             # Append lonely noun
             wordPairs.append({'source': {'word': word['orth'],
                 'lemma': word['lemma'], 'sentence': val},
-                'target': {'word': '', 'lemma': '', sentence: ''},
+                'target': {'word': '', 'lemma': '', 'sentence': None},
                 'device': 'single word'})
 
         # If there are multiple nouns append all combinations of nouns
@@ -691,6 +687,7 @@ text9 = """Es belastet mich, dass Michael mit jemand anderem schläfst.
     Es ist so bieder, dass Kobold jetzt arbeitet. Die Arbeit passt nicht
     zu ihm und er ist kein Biedermann."""
 
-text10 = """Die Spieler gehen in den Wald. Der Fußballspieler ist von Bayern."""
+text10 = """Mit der Belastung kann ich nicht leben. Es belastet mich, dass Franz fremd gegangen ist.
+    Ich schlafe im Garten. Der Schlaf tat an diesem Tag gut."""
 
-print(analyzeTextCohesion(text10))
+print(analyzeTextCohesion(text2))
