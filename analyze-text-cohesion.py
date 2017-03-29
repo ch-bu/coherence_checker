@@ -565,18 +565,35 @@ def analyzeTextCohesion(text):
     for val, sentence in enumerate(sentences):
         # Get all nouns
         nouns = [word['lemma'] for word in sentence if word['noun'] == True]
+        nouns_full = [word for word in sentence if word['noun']]
 
         # Append noun if it only occurs once
         if len(nouns) == 1 and word['noun']:
             # Append lonely noun
-            wordPairs.append([word['lemma'], word['lemma'], 'lexical overlap'])
+            wordPairs.append({'source': {'word': word['orth'],
+                'lemma': word['lemma'], 'sentence': val},
+                'target': {'word': '', 'lemma': '', sentence: ''},
+                'device': 'single word'})
+
+            # wordPairs.append([word['lemma'], word['lemma'], 'lexical overlap'])
         # If there are multiple nouns append all combinations of nouns
         elif len(nouns) > 1:
-            for subset in itertools.combinations_with_replacement(nouns, 2):
+            # print(nouns)
+            for subset in itertools.combinations_with_replacement(nouns_full, 2):
                 if subset[0] != subset[1]:
-                    pairArray = list(subset)
-                    pairArray.append('lexical overlap')
-                    wordPairs.append(pairArray)
+                    # print(subset)
+                    wordPairs.append({'source': {'word': subset[0]['orth'],
+                    'lemma': subset[0]['lemma'], 'sentence': val},
+                    'target': {'word': subset[1]['orth'],
+                    'lemma': subset[1]['orth'], 'sentence': val},
+                    'device': 'within sentence'})
+                    # print(subset)
+                    # pairArray = list(subset)
+                    # # print(pairArray)
+                    # # for word in pairArray:
+                    # #     print(word)
+                    # pairArray.append('lexical overlap')
+                    # wordPairs.append(pairArray)
 
     # Get hypernym hyponym pairs
     hyponym_hyper_pairs = getHypoHyperPairs(sentences, gn)
@@ -598,7 +615,7 @@ def analyzeTextCohesion(text):
     num_sentences = len(sentences)
 
     # Number of clusters
-    num_clusters = get_clusters(wordPairs)
+    # num_clusters = get_clusters(wordPairs)
 
     # Get number of concepts
     num_concepts = len(set([concept['lemma']
@@ -606,8 +623,8 @@ def analyzeTextCohesion(text):
 
     return {'word_pairs': wordPairs,
              'numSentences': num_sentences,
-             'numConcepts': num_concepts,
-             'numClusters': num_clusters}
+             'numConcepts': num_concepts}
+             # 'numClusters': num_clusters}
 
 
 
