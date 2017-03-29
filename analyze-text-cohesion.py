@@ -10,48 +10,7 @@ from more_itertools import unique_everseen
 from nltk.corpus import stopwords # We might need to remove this line
 from nltk.stem.snowball import GermanStemmer
 import itertools
-# from pymongo import MongoClient
 
-
-# def nounify(verb_word):
-#     """ Transform a verb to the closest noun: die -> death """
-
-#     gn = load_germanet()
-
-#     verb_synsets = gn.synsets(gn.lemmatise(verb_word)[0], pos="v")
-
-#     # Word not found
-#     if not verb_synsets:
-#         return []
-
-#     # Get all verb lemmas of the word
-#     verb_lemmas = [l.orthForm for s in verb_synsets for l in s.lemmas]
-
-#     # verb_lemmas = [l for s in verb_synsets \
-#     #                for l in s.lemmas if s.name.split('.')[1] == 'v']
-#     # print(verb_lemmas)
-
-#     print(gn.synsets('Haus')[0].lemmas[0].rels())
-#     # Get related forms
-#     # derivationally_related_forms = [(l, l.derivationally_related_forms()) \
-#     #                                 for l in verb_lemmas]
-
-#     # # filter only the nouns
-#     # related_noun_lemmas = [l for drf in derivationally_related_forms \
-#     #                        for l in drf[1] if l.synset.name.split('.')[1] == 'n']
-
-#     # # Extract the words from the lemmas
-#     # words = [l.name for l in related_noun_lemmas]
-#     # len_words = len(words)
-
-#     # # Build the result in the form of a list containing tuples (word, probability)
-#     # result = [(w, float(words.count(w))/len_words) for w in set(words)]
-#     # result.sort(key=lambda w: -w[1])
-
-#     # return all the possibilities sorted by probability
-#     return None
-
-# # print(nounify('arbeitet'))
 
 def getPOSElement(element, regex, tags):
     """Returns an array with a boolean
@@ -104,30 +63,49 @@ def getHypoHyperPairs(sentences, gn):
                                 hypers.append(lemma.orthForm)
 
                     # Get next sentence
-                    nextSentence = [wordNext['lemma']
+                    words_next_sentence = [wordNext
                         for wordNext in sentences[val + 1] if wordNext['noun']]
 
                     # Get nouns of current sentence
-                    sentence = [wordThis['lemma'] for wordThis in sentences[val]
+                    word_this_sentence = [wordThis for wordThis in sentences[val]
                         if wordThis['noun']]
 
-                    # Find common elements in hypos and next sentence
-                    intersections_hypo = list(set(hypos).intersection(nextSentence))
+                    # Get nouns of next sentence in array
+                    nouns_next_sentence = map(lambda x: x['lemma'], words_next_sentence)
 
                     # Find common elements in hypos and next sentence
-                    intersections_hyper = list(set(hypers).intersection(nextSentence))
+                    intersections_hypo = list(set(hypos).intersection(nouns_next_sentence))
+
+                    # Find common elements in hypos and next sentence
+                    intersections_hyper = list(set(hypers).intersection(nouns_next_sentence))
 
                     # Loop over every intersections and append
                     for intersection in intersections_hypo:
                         if intersection != word['orth']:
-                            wordPairs.append([word['lemma'], intersection,
-                                'hyponym'])
+                            # Get full target word of intersection
+                            targetWord = filter(lambda x: x['orth']
+                                == intersection, words_next_sentence)[0]
+
+                            # Append
+                            wordPairs.append({'source': {'word': word['orth'],
+                                'lemma': word['lemma'], 'sentence': val},
+                                'target': {'word': targetWord['orth'],
+                                'lemma': targetWord['lemma'], 'sentence': val + 1},
+                                'device': 'hyponym'})
 
                     # Loop over every intersections and append
                     for intersection in intersections_hyper:
                         if intersection != word['orth']:
-                            wordPairs.append([word['lemma'], intersection,
-                                'hypernym'])
+                            # Get full target word of intersection
+                            targetWord = filter(lambda x: x['orth']
+                                == intersection, words_next_sentence)[0]
+
+                            # Append
+                            wordPairs.append({'source': {'word': word['orth'],
+                                'lemma': word['lemma'], 'sentence': val},
+                                'target': {'word': targetWord['orth'],
+                                'lemma': targetWord['lemma'], 'sentence': val + 1},
+                                'device': 'hypernym'})
 
     return wordPairs
 
@@ -584,7 +562,7 @@ def analyzeTextCohesion(text):
                     wordPairs.append({'source': {'word': subset[0]['orth'],
                         'lemma': subset[0]['lemma'], 'sentence': val},
                         'target': {'word': subset[1]['orth'],
-                        'lemma': subset[1]['orth'], 'sentence': val},
+                        'lemma': subset[1]['lemma'], 'sentence': val},
                         'device': 'within sentence'})
 
     # Get hypernym hyponym pairs
@@ -709,7 +687,6 @@ text9 = """Es belastet mich, dass Michael mit jemand anderem schläfst.
     Es ist so bieder, dass Kobold jetzt arbeitet. Die Arbeit passt nicht
     zu ihm und er ist kein Biedermann."""
 
-text10 = """Das Spiel läuft. Das Fußballspiel macht heute Spaß.
-    Das Spiel spielt sich am Bahnhof ab."""
+text10 = """Die Dackel gehen in den Wald. Dieser Hund ist ein großes Tier."""
 
 print(analyzeTextCohesion(text10))
