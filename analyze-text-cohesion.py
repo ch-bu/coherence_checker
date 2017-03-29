@@ -433,6 +433,29 @@ def get_coreferences(sentences, gn):
 
     return word_pairs
 
+def calc_local_cohesion(word_pairs, sentences):
+    """Calculates local cohesion
+    by a probability score between 0 and 1.
+    1 indicates a fully local coherent text.
+
+    Args:
+        word_pairs (dict) - All word pairs of text
+        sentences (Array) - List of all sentences
+
+    Return:
+        Float - Local cohesion of text
+    """
+
+    # Get all connections also within sentences
+    connections = list(set(map(lambda x: (x['source']['sentence'],
+        x['target']['sentence']), word_pairs)))
+
+    # Get all connections between sentences
+    connections_between = filter(lambda x: x[0] != x[1], connections)
+
+    # Return local cohesion
+    return float(len(connections_between)) / (len(sentences) - 1)
+
 
 def analyzeTextCohesion(text):
     """Analyzed the cohesion of a txt.
@@ -552,7 +575,7 @@ def analyzeTextCohesion(text):
             # Append lonely noun
             wordPairs.append({'source': {'word': word['orth'],
                 'lemma': word['lemma'], 'sentence': val},
-                'target': {'word': '', 'lemma': '', 'sentence': None},
+                'target': {'word': word['orth'], 'lemma': word['lemma'], 'sentence': val},
                 'device': 'single word'})
 
         # If there are multiple nouns append all combinations of nouns
@@ -586,6 +609,9 @@ def analyzeTextCohesion(text):
     # Calc number of sentences
     num_sentences = len(sentences)
 
+    # Calculate local cohesion
+    local_cohesion = calc_local_cohesion(wordPairs, sentences)
+
     # Number of clusters
     # num_clusters = get_clusters(wordPairs)
 
@@ -595,8 +621,9 @@ def analyzeTextCohesion(text):
 
     return {'word_pairs': wordPairs,
              'numSentences': num_sentences,
-             'numConcepts': num_concepts}
-             # 'numClusters': num_clusters}
+             'numConcepts': num_concepts,
+             # 'numClusters': num_clusters,
+             'local cohesion': local_cohesion}
 
 
 
@@ -678,7 +705,7 @@ text7 = """Der Sänger war toll. Die Opernsänger begann mit einem Solo.
 
 text8 = """Es gibt verschiedene Pflanzen auf der Welt.
     Baumwollpflanzen beispielsweise werden im Haus benutzt.
-    Sie dienen dienen dem Spaß."""
+    Ein Bier ist kein Wein."""
 
 text9 = """Es belastet mich, dass Michael mit jemand anderem schläfst.
     Der Schlaf ist keine Belastung für mich. Franz brütet Nägel in die Wand.
@@ -690,4 +717,4 @@ text9 = """Es belastet mich, dass Michael mit jemand anderem schläfst.
 text10 = """Mit der Belastung kann ich nicht leben. Es belastet mich, dass Franz fremd gegangen ist.
     Ich schlafe im Garten. Der Schlaf tat an diesem Tag gut."""
 
-print(analyzeTextCohesion(text2))
+print(analyzeTextCohesion(text7))
