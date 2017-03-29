@@ -420,14 +420,16 @@ def get_coreferences(sentences, gn):
                         anaphor_parent = [i for i, x in enumerate(unique_current) if x][0]
 
                         # Get lemma of anaphor parent
-                        lemma_parent = current_sentence[anaphor_parent]['lemma']
+                        word_parent = current_sentence[anaphor_parent]
 
-                        # Create word pairs
-                        pairs = [[lemma_parent, noun['lemma'], 'coreference']
-                            for noun in nouns_next_sentence]
-
-                        # Append pairs to word pairs
-                        word_pairs = word_pairs + pairs
+                        # Loop over every noun in next sentence
+                        for noun_next in nouns_next_sentence:
+                            # Append
+                            word_pairs.append({'source': {'word': word_parent['orth'],
+                                'lemma': word_parent['lemma'], 'sentence': val},
+                                'target': {'word': noun_next['orth'],
+                                'lemma': noun_next['lemma'], 'sentence': val + 1},
+                                'device': 'coreference'})
 
     return word_pairs
 
@@ -669,9 +671,7 @@ text4 = """Habichtschwamm kam in das Zimmer herein. Dieser Schwamm
     Ungewöhnlich für eine 3-Zimmer-Wohnung."""
 
 text6 = """Ein Beispiel hierfür war Hans. Er begann letztes Jahr
-    etwas. Zum Beispiel lief er durch ein Haus. Das Lernmaterial
-    steht im Vordergrund. Dieses Material ist in einer Wiese. Das Filmstudio
-    steht im Hotel. Dieses Studio ist in einer Rolle."""
+    etwas."""
 
 text7 = """Der Sänger war toll. Die Opernsänger begann mit einem Solo.
     Der 10000-Meter-Lauf war toll. Den Lauf machten hunderte Leute mit."""
