@@ -109,9 +109,14 @@ def getHypoHyperPairs(sentences, gn):
     return wordPairs
 
 
-def get_clusters(word_pairs):
+def get_clusters(word_pairs, sentences):
     """Calculates the number of computed
     clusters"""
+
+    # If we only have one sentence return word pairs
+    # as single cluster
+    if len(sentences) == 1:
+        return word_pairs
 
     # Initialize clusters. The cluster
     # later stores all clusters as a list containing
@@ -126,7 +131,7 @@ def get_clusters(word_pairs):
     for num in range(0, len(word_pairs)):
         # Store all words that are stored in the current cluster
         current_word_pair = [word_pairs[num]['source']['lemma'],
-            word_pairs[num]['target']['lemma']]
+                word_pairs[num]['target']['lemma']]
 
         # Only assign a new cluster if the current word pair has
         # not already been processed and if we are at least in the
@@ -452,8 +457,13 @@ def calc_local_cohesion(word_pairs, sentences):
     # Get all connections between sentences
     connections_between = filter(lambda x: x[0] != x[1], connections)
 
-    # Return local cohesion
-    local_cohesion = float(len(connections_between)) / (len(sentences) - 1)
+    try:
+        # Return local cohesion
+        local_cohesion = float(len(connections_between)) / (len(sentences) - 1)
+    except ZeroDivisionError:
+        return {'local_cohesion': None,
+                'cohSentences': None,
+                'cohNotSentences': None}
 
     # Number of coherent sentences
     num_coh_sentences = len(connections_between)
@@ -464,6 +474,69 @@ def calc_local_cohesion(word_pairs, sentences):
     return {'local_cohesion': local_cohesion,
             'cohSentences': num_coh_sentences,
             'cohNotSentences': num_non_coh_sentences}
+
+
+def get_lemma_mapping(word_pairs):
+    """Get a dictionary that stores all orthographic
+    forms for a lemma.
+
+    Args:
+        word_pairs (Array) - a list of all word_pairs
+
+    Returns:
+        Dictionary - All lemma - word combinations
+    """
+
+    # Initialize dictionaries that hold the
+    # mapping of a lemma to a word or of a word to a lemma
+    lemma_word_dic = {}
+    word_lemma_dic = {}
+
+    # Loop over every word pair
+    for pair in word_pairs:
+        # Temporary store source and target
+        # of current word pair
+        source = pair['source']
+        target = pair['target']
+
+        # Attach each mapping of lemma and corresponding
+        # word. Later we calculate the set
+        if lemma_word_dic.get(source['lemma']):
+            lemma_word_dic[source['lemma']].append(source['word'])
+        else:
+            lemma_word_dic[source['lemma']] = [source['word']]
+
+        # Add target
+        if lemma_word_dic.get(target['lemma']):
+            lemma_word_dic[target['lemma']].append(target['word'])
+        else:
+            lemma_word_dic[target['lemma']] = [target['word']]
+
+        # Attach each mapping of word and corresponding
+        # lemma. Later we calculate the set
+        if word_lemma_dic.get(source['word']):
+            word_lemma_dic[source['word']].append(source['lemma'])
+        else:
+            word_lemma_dic[source['word']] = [source['lemma']]
+
+        if word_lemma_dic.get(target['word']):
+            word_lemma_dic[target['word']].append(target['lemma'])
+        else:
+            word_lemma_dic[target['word']] = [target['lemma']]
+
+    # Build lemma dic without redundant words
+    lemma_word_dic_non_redundant = {}
+    word_lemma_dic_non_redundant = {}
+
+    # Build sets of both dictionaries
+    for field, words in lemma_word_dic.items():
+        lemma_word_dic_non_redundant[field] = list(set(words))
+
+    for field, words in word_lemma_dic.items():
+        word_lemma_dic_non_redundant[field] = list(set(words))
+
+    return {'lemma_word': lemma_word_dic_non_redundant,
+            'word_lemma': word_lemma_dic_non_redundant}
 
 
 def analyzeTextCohesion(text):
@@ -622,7 +695,10 @@ def analyzeTextCohesion(text):
     local_cohesion = calc_local_cohesion(word_pairs, sentences)
 
     # Calculate clusters
-    clusters = get_clusters(word_pairs)
+    cluster = get_clusters(word_pairs, sentences)
+
+    # Get dictionary of orthographic forms of all lemmas
+    word_lemma_mapping = get_lemma_mapping(word_pairs)
 
     # Get number of concepts
     num_concepts = len(set([concept['lemma']
@@ -632,14 +708,13 @@ def analyzeTextCohesion(text):
     return {'word_pairs': word_pairs,
             'numSentences': num_sentences,
             'numConcepts': num_concepts,
-            'clusters': clusters,
-            'numClusters': len(clusters),
+            'clusters': cluster,
+            'numCluster': len(cluster),
             'local cohesion': local_cohesion['local_cohesion'],
             'cohSentences': local_cohesion['cohSentences'],
-            'cohNotSentences': local_cohesion['cohNotSentences']}
-
-# response_data = {
-#                  'lemmaDic': analyzer.lemmaDic}
+            'cohNotSentences': local_cohesion['cohNotSentences'],
+            'lemmaWordRelations': word_lemma_mapping['lemma_word'],
+            'wordLemmaRelations': word_lemma_mapping['word_lemma']}
 
 
 text = """Im Folgenden möchte ich euch das Modell
@@ -720,7 +795,7 @@ text7 = """Der Sänger war toll. Die Opernsänger begann mit einem Solo.
 
 text8 = """Es gibt verschiedene Pflanzen auf der Welt.
     Baumwollpflanzen beispielsweise werden im Haus benutzt.
-    Ein Bier ist kein Wein."""
+    Ein Bier ist kein Wein. Die Weine sind im Garten."""
 
 text9 = """Es belastet mich, dass Michael mit jemand anderem schläfst.
     Der Schlaf ist keine Belastung für mich. Franz brütet Nägel in die Wand.
@@ -731,4 +806,4 @@ text9 = """Es belastet mich, dass Michael mit jemand anderem schläfst.
 text10 = """Mit der Belastung kann ich nicht leben. Es belastet mich, dass Franz fremd gegangen ist.
     Ich schlafe im Garten. Der Schlaf tat an diesem Tag gut."""
 
-print(analyzeTextCohesion(text6))
+print(analyzeTextCohesion(text))
