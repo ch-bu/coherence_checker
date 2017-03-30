@@ -7,7 +7,6 @@ from pandas import DataFrame
 import numpy as np
 from pygermanet import load_germanet
 from more_itertools import unique_everseen
-from nltk.corpus import stopwords # We might need to remove this line
 from nltk.stem.snowball import GermanStemmer
 import itertools
 
@@ -114,85 +113,84 @@ def get_clusters(word_pairs):
     """Calculates the number of computed
     clusters"""
 
-    # Initialize clusters
+    # Initialize clusters. The cluster
+    # later stores all clusters as a list containing
+    # the word pair dictionaries
     clusters = []
-    tempClusters = []
-    found = True
-    pairs = word_pairs
+
+    # Store all words that have already been
+    # assigned to a cluster
+    assigned_words = []
 
     # Loop over every word pair
-    for num in range(0, len(pairs)):
-        # Get link data
-        source = pairs[num][0]
-        target = pairs[num][1]
+    for num in range(0, len(word_pairs)):
+        # Store all words that are stored in the current cluster
+        current_word_pair = [word_pairs[num]['source']['lemma'],
+            word_pairs[num]['target']['lemma']]
 
-        # Temporary list
-        tempClusters = [source, target]
+        # Only assign a new cluster if the current word pair has
+        # not already been processed and if we are at least in the
+        # second word pair
+        if (not bool(set(current_word_pair) & set(assigned_words))) and (num != 0):
+            # Init current cluster
+            current_cluster = [word_pairs[num]]
 
-        # Found set to true for while loop
-        found = True
+            # Remember that we already added the words of the current cluster
+            assigned_words.append(current_word_pair[0])
+            assigned_words.append(current_word_pair[1])
 
-        while found:
-            # Found set to false
-            found = False
+            # Index of word_pair we already added to current cluster.
+            # We store the index to reduce the computation. If we already
+            # added an index to the current cluster, there is no need
+            # to look at it again
+            index_pairs_added = [num]
 
-            # Loop over every word pair again
-            for num_again in range(0, len(pairs)):
-                # Word pairs do not match
-                if num != num_again:
+            # Found set to true for while loop
+            found = True
 
-                    # Initialize temporary source and target
-                    tempSource = pairs[num_again][0]
-                    tempTarget = pairs[num_again][1]
+            # As long as we still find connections keep on looping
+            while found:
+                # Found set to false
+                found = False
 
-                    # Temporary array
-                    tempArray = [tempSource, tempTarget]
+                # Loop over every word pair again
+                for num_again in range(0, len(word_pairs)):
+                    # Word pairs do not match
+                    if num_again not in index_pairs_added:
+                        # Store both words of current pair in list
+                        iter_word_pair = [word_pairs[num_again]['source']['lemma'],
+                                 word_pairs[num_again]['target']['lemma']]
 
-                    # Temporary sources and targets in array position
-                    tempPosSource = tempSource in tempClusters
-                    tempPosTarget = tempTarget in tempClusters
+                        # Both pairs share an element
+                        shared_element = bool(set(current_word_pair) & set(iter_word_pair))
 
-                    # Either of the two in in tempClusters
-                    if tempPosSource or tempPosTarget:
-                        # TempSource is in tempClusters
-                        if not tempPosTarget:
+                        # If they share an element append to current cluster
+                        if shared_element:
+                            # Append pair to current cluster
+                            current_cluster.append(word_pairs[num_again])
+
+                            # Remember that we already appended this
+                            # pair to the current cluster
+                            index_pairs_added.append(num_again)
+
+                            # Add word pair that belongs to current cluster
+                            # to list of assigned word pairs. By doing this
+                            # we know if a word has already been assigned
+                            # to a cluster.
+                            assigned_words.append(iter_word_pair[0])
+                            assigned_words.append(iter_word_pair[1])
+
+                            # We found a candidate. When we found a connection
+                            # a new word might be added to the current
+                            # cluster. Therefore we have too loop over
+                            # every word pair again to see if we
+                            # missed a connection with the new word
                             found = True
-                            tempClusters.append(tempTarget)
 
-                    # Temp Target is in tempClusters
-                    if tempPosTarget:
-                        # TempSource is not in tempClusters
-                        if not tempPosSource:
-                            found = True
-                            tempClusters.append(tempSource)
+            # Append current cluster to all clusters
+            clusters.append(current_cluster)
 
-        # Remove duplicates from tempClusters
-        tempClusters = list(unique_everseen(tempClusters))
-
-        clusterIn = False
-
-        # Clusters has at least one element
-        if len(clusters) > 0:
-            # Loop over every cluster
-            for cluster in range(0, len(clusters)):
-                # Current Cluster
-                currentCluster = clusters[cluster]
-
-                # Loop over every element in tempClusters
-                for c in range(0, len(tempClusters)):
-                    if tempClusters[c] in currentCluster:
-                        clusterIn = True
-                        break
-
-            # tempClusters does not exist yet in clusters
-            if not clusterIn:
-                clusters.append(tempClusters)
-
-        # Clusters is empty
-        else:
-            clusters.append(tempClusters)
-
-    return len(clusters)
+    return clusters
 
 
 def get_compounds(sentences):
@@ -433,6 +431,7 @@ def get_coreferences(sentences, gn):
 
     return word_pairs
 
+
 def calc_local_cohesion(word_pairs, sentences):
     """Calculates local cohesion
     by a probability score between 0 and 1.
@@ -572,7 +571,7 @@ def analyzeTextCohesion(text):
     ############################################################################
 
     # Init word pairs array
-    wordPairs = []
+    word_pairs = []
 
     # Build lexical overlap word pairs
     for val, sentence in enumerate(sentences):
@@ -583,7 +582,7 @@ def analyzeTextCohesion(text):
         # Append noun if it only occurs once
         if len(nouns) == 1 and word['noun']:
             # Append lonely noun
-            wordPairs.append({'source': {'word': word['orth'],
+            word_pairs.append({'source': {'word': word['orth'],
                 'lemma': word['lemma'], 'sentence': val},
                 'target': {'word': word['orth'], 'lemma': word['lemma'], 'sentence': val},
                 'device': 'single word'})
@@ -594,7 +593,7 @@ def analyzeTextCohesion(text):
             for subset in itertools.combinations_with_replacement(nouns_full, 2):
                 if subset[0] != subset[1]:
                     # Append word pairs
-                    wordPairs.append({'source': {'word': subset[0]['orth'],
+                    word_pairs.append({'source': {'word': subset[0]['orth'],
                         'lemma': subset[0]['lemma'], 'sentence': val},
                         'target': {'word': subset[1]['orth'],
                         'lemma': subset[1]['lemma'], 'sentence': val},
@@ -613,34 +612,33 @@ def analyzeTextCohesion(text):
     stem_relations = get_stem_relations(sentences, gn)
 
     # Merge all word pairs
-    wordPairs = wordPairs + hyponym_hyper_pairs + coreferences + compounds + \
+    word_pairs = word_pairs + hyponym_hyper_pairs + coreferences + compounds + \
         stem_relations
 
     # Calc number of sentences
     num_sentences = len(sentences)
 
     # Calculate local cohesion
-    local_cohesion = calc_local_cohesion(wordPairs, sentences)
+    local_cohesion = calc_local_cohesion(word_pairs, sentences)
 
-    # Number of clusters
-    # num_clusters = get_clusters(wordPairs)
+    # Calculate clusters
+    clusters = get_clusters(word_pairs)
 
     # Get number of concepts
     num_concepts = len(set([concept['lemma']
-        for concept in tags if concept['noun'] == True]))
+                for concept in tags if concept['noun'] == True]))
 
     # Return data
-    return {'word_pairs': wordPairs,
-             'numSentences': num_sentences,
-             'numConcepts': num_concepts,
-             # 'numClusters': num_clusters,
-             'local cohesion': local_cohesion['local_cohesion'],
-             'cohSentences': local_cohesion['cohSentences'],
-             'cohNotSentences': local_cohesion['cohNotSentences']}
+    return {'word_pairs': word_pairs,
+            'numSentences': num_sentences,
+            'numConcepts': num_concepts,
+            'clusters': clusters,
+            'numClusters': len(clusters),
+            'local cohesion': local_cohesion['local_cohesion'],
+            'cohSentences': local_cohesion['cohSentences'],
+            'cohNotSentences': local_cohesion['cohNotSentences']}
 
 # response_data = {
-#                  'clusters': analyzer.get_whole_clusters(),
-#                  'numClusters': analyzer.get_num_clusters(),
 #                  'lemmaDic': analyzer.lemmaDic}
 
 
@@ -728,10 +726,9 @@ text9 = """Es belastet mich, dass Michael mit jemand anderem schläfst.
     Der Schlaf ist keine Belastung für mich. Franz brütet Nägel in die Wand.
     Die Brut könnte er sich eigentlich sparen, da er ja schon ein
     Haus hat. Hans geht durch das Haus. Sein Gang ist wie ein Gemälde.
-    Es ist so bieder, dass Kobold jetzt arbeitet. Die Arbeit passt nicht
-    zu ihm und er ist kein Biedermann."""
+    Es ist so bieder, dass Kobold jetzt arbeitet. Bier ist kein Wein."""
 
 text10 = """Mit der Belastung kann ich nicht leben. Es belastet mich, dass Franz fremd gegangen ist.
     Ich schlafe im Garten. Der Schlaf tat an diesem Tag gut."""
 
-print(analyzeTextCohesion(text2))
+print(analyzeTextCohesion(text6))
