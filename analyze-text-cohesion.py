@@ -454,7 +454,17 @@ def calc_local_cohesion(word_pairs, sentences):
     connections_between = filter(lambda x: x[0] != x[1], connections)
 
     # Return local cohesion
-    return float(len(connections_between)) / (len(sentences) - 1)
+    local_cohesion = float(len(connections_between)) / (len(sentences) - 1)
+
+    # Number of coherent sentences
+    num_coh_sentences = len(connections_between)
+
+    # Number of non-coherent sentences
+    num_non_coh_sentences = (len(sentences) - 1) - num_coh_sentences
+
+    return {'local_cohesion': local_cohesion,
+            'cohSentences': num_coh_sentences,
+            'cohNotSentences': num_non_coh_sentences}
 
 
 def analyzeTextCohesion(text):
@@ -619,12 +629,19 @@ def analyzeTextCohesion(text):
     num_concepts = len(set([concept['lemma']
         for concept in tags if concept['noun'] == True]))
 
+    # Return data
     return {'word_pairs': wordPairs,
              'numSentences': num_sentences,
              'numConcepts': num_concepts,
              # 'numClusters': num_clusters,
-             'local cohesion': local_cohesion}
+             'local cohesion': local_cohesion['local_cohesion'],
+             'cohSentences': local_cohesion['cohSentences'],
+             'cohNotSentences': local_cohesion['cohNotSentences']}
 
+# response_data = {
+#                  'clusters': analyzer.get_whole_clusters(),
+#                  'numClusters': analyzer.get_num_clusters(),
+#                  'lemmaDic': analyzer.lemmaDic}
 
 
 text = """Im Folgenden möchte ich euch das Modell
@@ -717,4 +734,4 @@ text9 = """Es belastet mich, dass Michael mit jemand anderem schläfst.
 text10 = """Mit der Belastung kann ich nicht leben. Es belastet mich, dass Franz fremd gegangen ist.
     Ich schlafe im Garten. Der Schlaf tat an diesem Tag gut."""
 
-print(analyzeTextCohesion(text7))
+print(analyzeTextCohesion(text2))
