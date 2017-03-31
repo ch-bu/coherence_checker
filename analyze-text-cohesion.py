@@ -667,15 +667,15 @@ def analyzeTextCohesion(text):
     # Build lexical overlap word pairs
     for val, sentence in enumerate(sentences):
         # Get all nouns
-        nouns = [word['lemma'] for word in sentence if word['noun'] == True]
+        nouns = [word['lemma'] for word in sentence if word['noun']]
         nouns_full = [word for word in sentence if word['noun']]
 
         # Append noun if it only occurs once
-        if len(nouns) == 1 and word['noun']:
+        if len(nouns) == 1:
             # Append lonely noun
-            word_pairs.append({'source': {'word': word['orth'],
-                'lemma': word['lemma'], 'sentence': val},
-                'target': {'word': word['orth'], 'lemma': word['lemma'], 'sentence': val},
+            word_pairs.append({'source': {'word': nouns_full[0]['orth'],
+                'lemma': nouns_full[0]['lemma'], 'sentence': val},
+                'target': {'word': nouns_full[0]['orth'], 'lemma': nouns_full[0]['lemma'], 'sentence': val},
                 'device': 'single word'})
 
         # If there are multiple nouns append all combinations of nouns
@@ -722,20 +722,20 @@ def analyzeTextCohesion(text):
     num_concepts = len(set([concept['lemma']
                 for concept in tags if concept['noun'] == True]))
 
-    return {'local cohesion': local_cohesion['local_cohesion'],
-            'cohSentences': local_cohesion['cohSentences'],
-            'cohNotSentences': local_cohesion['cohNotSentences'],}
-    # Return data
-    # return {'word_pairs': word_pairs,
-    #         'numSentences': num_sentences,
-    #         'numConcepts': num_concepts,
-    #         'clusters': cluster,
-    #         'numCluster': len(cluster),
-    #         'local cohesion': local_cohesion['local_cohesion'],
+    # return {'local cohesion': local_cohesion['local_cohesion'],
     #         'cohSentences': local_cohesion['cohSentences'],
-    #         'cohNotSentences': local_cohesion['cohNotSentences'],
-    #         'lemmaWordRelations': word_lemma_mapping['lemma_word'],
-    #         'wordLemmaRelations': word_lemma_mapping['word_lemma']}
+    #         'cohNotSentences': local_cohesion['cohNotSentences'],}
+    # Return data
+    return {'word_pairs': word_pairs,
+            'numSentences': num_sentences,
+            'numConcepts': num_concepts,
+            'clusters': cluster,
+            'numCluster': len(cluster),
+            'local cohesion': local_cohesion['local_cohesion'],
+            'cohSentences': local_cohesion['cohSentences'],
+            'cohNotSentences': local_cohesion['cohNotSentences'],
+            'lemmaWordRelations': word_lemma_mapping['lemma_word'],
+            'wordLemmaRelations': word_lemma_mapping['word_lemma']}
 
 
 text = """Im Folgenden möchte ich euch das Modell
@@ -816,7 +816,7 @@ text7 = """Der Sänger war toll. Die Opernsänger begann mit einem Solo.
 
 text8 = """Es gibt verschiedene Pflanzen auf der Welt.
     Baumwollpflanzen beispielsweise werden im Haus benutzt.
-    Ein Bier ist kein Wein. Die Weine sind im Garten."""
+    Ein Bier ist kein Wein. Die Weine sind im Garten. Das Portfolio ist gut geworden."""
 
 text9 = """Es belastet mich, dass Michael mit jemand anderem schläfst.
     Der Schlaf ist keine Belastung für mich. Franz brütet Nägel in die Wand.
@@ -827,4 +827,4 @@ text9 = """Es belastet mich, dass Michael mit jemand anderem schläfst.
 text10 = """Mit der Belastung kann ich nicht leben. Es belastet mich, dass Franz fremd gegangen ist.
     Ich schlafe im Garten. Der Schlaf tat an diesem Tag gut."""
 
-print(analyzeTextCohesion(text2))
+print(analyzeTextCohesion(text8))
