@@ -134,9 +134,8 @@ def get_clusters(word_pairs, sentences):
                 word_pairs[num]['target']['lemma']]
 
         # Only assign a new cluster if the current word pair has
-        # not already been processed and if we are at least in the
-        # second word pair
-        if (not bool(set(current_word_pair) & set(assigned_words))) and (num != 0):
+        # not already been processed
+        if (not bool(set(current_word_pair) & set(assigned_words))):
             # Init current cluster
             current_cluster = [word_pairs[num]]
 
@@ -726,16 +725,18 @@ def analyzeTextCohesion(text):
     #         'cohSentences': local_cohesion['cohSentences'],
     #         'cohNotSentences': local_cohesion['cohNotSentences'],}
     # Return data
-    return {'word_pairs': word_pairs,
-            'numSentences': num_sentences,
-            'numConcepts': num_concepts,
-            'clusters': cluster,
-            'numCluster': len(cluster),
-            'local cohesion': local_cohesion['local_cohesion'],
-            'cohSentences': local_cohesion['cohSentences'],
-            'cohNotSentences': local_cohesion['cohNotSentences'],
-            'lemmaWordRelations': word_lemma_mapping['lemma_word'],
-            'wordLemmaRelations': word_lemma_mapping['word_lemma']}
+    print(cluster)
+    print(len(cluster))
+    # return {'word_pairs': word_pairs,
+    #         'numSentences': num_sentences,
+    #         'numConcepts': num_concepts,
+    #         'clusters': cluster,
+    #         'numCluster': len(cluster),
+    #         'local cohesion': local_cohesion['local_cohesion'],
+    #         'cohSentences': local_cohesion['cohSentences'],
+    #         'cohNotSentences': local_cohesion['cohNotSentences'],
+    #         'lemmaWordRelations': word_lemma_mapping['lemma_word'],
+    #         'wordLemmaRelations': word_lemma_mapping['word_lemma']}
 
 
 text = """Im Folgenden möchte ich euch das Modell
