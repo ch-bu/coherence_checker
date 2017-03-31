@@ -454,9 +454,27 @@ def calc_local_cohesion(word_pairs, sentences):
     connections = list(set(map(lambda x: (x['source']['sentence'],
         x['target']['sentence']), word_pairs)))
 
-    # Get all connections between sentences
-    connections_between = filter(lambda x: x[0] != x[1], connections)
+    # Loop over every sentence
+    # We need to count the sentences that overlap by argument
+    # overlap
+    for val, sentence in enumerate(sentences):
+        # Do not loop over last sentence
+        if val != (len(sentences) - 1):
 
+            lemmas_current_sentence = [word['lemma'] for word in sentence
+                    if word['noun']]
+
+            lemmas_next_sentence = [word['lemma'] for word in sentences[val + 1]
+                    if word['noun']]
+
+            if bool(set(lemmas_current_sentence) & set(lemmas_next_sentence)):
+                connections.append((val, val + 1))
+
+    # Get all connections between sentences
+    connections_between = list(set(filter(lambda x: x[0] != x[1], connections)))
+
+    # If we only have one sentence there is no point in calculating
+    # local cohesion. Check if zero division error occurs
     try:
         # Return local cohesion
         local_cohesion = float(len(connections_between)) / (len(sentences) - 1)
@@ -704,17 +722,20 @@ def analyzeTextCohesion(text):
     num_concepts = len(set([concept['lemma']
                 for concept in tags if concept['noun'] == True]))
 
-    # Return data
-    return {'word_pairs': word_pairs,
-            'numSentences': num_sentences,
-            'numConcepts': num_concepts,
-            'clusters': cluster,
-            'numCluster': len(cluster),
-            'local cohesion': local_cohesion['local_cohesion'],
+    return {'local cohesion': local_cohesion['local_cohesion'],
             'cohSentences': local_cohesion['cohSentences'],
-            'cohNotSentences': local_cohesion['cohNotSentences'],
-            'lemmaWordRelations': word_lemma_mapping['lemma_word'],
-            'wordLemmaRelations': word_lemma_mapping['word_lemma']}
+            'cohNotSentences': local_cohesion['cohNotSentences'],}
+    # Return data
+    # return {'word_pairs': word_pairs,
+    #         'numSentences': num_sentences,
+    #         'numConcepts': num_concepts,
+    #         'clusters': cluster,
+    #         'numCluster': len(cluster),
+    #         'local cohesion': local_cohesion['local_cohesion'],
+    #         'cohSentences': local_cohesion['cohSentences'],
+    #         'cohNotSentences': local_cohesion['cohNotSentences'],
+    #         'lemmaWordRelations': word_lemma_mapping['lemma_word'],
+    #         'wordLemmaRelations': word_lemma_mapping['word_lemma']}
 
 
 text = """Im Folgenden möchte ich euch das Modell
@@ -806,4 +827,4 @@ text9 = """Es belastet mich, dass Michael mit jemand anderem schläfst.
 text10 = """Mit der Belastung kann ich nicht leben. Es belastet mich, dass Franz fremd gegangen ist.
     Ich schlafe im Garten. Der Schlaf tat an diesem Tag gut."""
 
-print(analyzeTextCohesion(text))
+print(analyzeTextCohesion(text2))
