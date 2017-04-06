@@ -648,7 +648,7 @@ def analyzeTextCohesion(text):
     tags = getPOSElement('singular', r'.*Sg', tags)
     tags = getPOSElement('accusative', r'.*N.Reg.Acc', tags)
     tags = getPOSElement('dative', r'.*N.Reg.Dat', tags)
-    tags = getPOSElement('nominative', r'.*N.Reg.Nom', tags)
+    tags = getPOSElement('nominative', r'.*N.(Reg|Name).Nom', tags)
     tags = getPOSElement('genitive', r'.*N.Reg.Gen', tags)
     tags = getPOSElement('feminin', r'.*Fem', tags)
     tags = getPOSElement('neutrum', r'.*Neut', tags)
@@ -679,6 +679,7 @@ def analyzeTextCohesion(text):
         # Get all nouns
         nouns = [word['lemma'] for word in sentence if word['noun']]
         nouns_full = [word for word in sentence if word['noun']]
+        nominatives = filter(lambda x: x['nominative'], sentence)
 
         # Append noun if it only occurs once
         if len(nouns) == 1:
@@ -690,15 +691,54 @@ def analyzeTextCohesion(text):
 
         # If there are multiple nouns append all combinations of nouns
         elif len(nouns) > 1:
-            # Loop over every combination of nouns in current sentence
-            for subset in itertools.combinations_with_replacement(nouns_full, 2):
-                if subset[0] != subset[1]:
-                    # Append word pairs
-                    word_pairs.append({'source': {'word': subset[0]['orth'],
-                        'lemma': subset[0]['lemma'], 'sentence': val},
-                        'target': {'word': subset[1]['orth'],
-                        'lemma': subset[1]['lemma'], 'sentence': val},
-                        'device': 'within sentence'})
+            # Check if there are nominatives within the sentence
+            if len(nominatives) > 0:
+                # Loop over every combination of nouns in current sentence
+                for subset in itertools.combinations_with_replacement(nouns_full, 2):
+                    if subset[0] != subset[1]:
+                        # Check if first word is nominative
+                        if subset[0]['nominative']:
+                            # Only combine nominatives with accusative, dative
+                            # and genitive
+                            if subset[1]['accusative'] or subset[1]['dative'] or \
+                                subset[1]['genitive']:
+                                # Append word pairs
+                                word_pairs.append({'source': {'word': subset[0]['orth'],
+                                    'lemma': subset[0]['lemma'], 'sentence': val},
+                                    'target': {'word': subset[1]['orth'],
+                                    'lemma': subset[1]['lemma'], 'sentence': val},
+                                    'device': 'within sentence'})
+                        # Check if second word is nominative
+                        if subset[1]['nominative']:
+                            # Only combine nominatives with accusative, dative,
+                            # and genitive
+                            if subset[0]['accusative'] or subset[0]['dative'] or \
+                                subset[0]['genitive']:
+                                # Append word pairs
+                                word_pairs.append({'source': {'word': subset[1]['orth'],
+                                    'lemma': subset[1]['lemma'], 'sentence': val},
+                                    'target': {'word': subset[0]['orth'],
+                                    'lemma': subset[0]['lemma'], 'sentence': val},
+                                    'device': 'within sentence'})
+            else:
+                # Loop over every combination of nouns in current sentence
+                for subset in itertools.combinations_with_replacement(nouns_full, 2):
+                    if subset[0] != subset[1]:
+                        # Combine accusative with dative
+                        if subset[0]['accusative'] and subset[1]['dative']:
+                            # Append word pairs
+                            word_pairs.append({'source': {'word': subset[0]['orth'],
+                                'lemma': subset[0]['lemma'], 'sentence': val},
+                                'target': {'word': subset[1]['orth'],
+                                'lemma': subset[1]['lemma'], 'sentence': val},
+                                'device': 'within sentence'})
+                        elif subset[1]['accusative'] and subset[0]['dative']:
+                            # Append word pairs
+                            word_pairs.append({'source': {'word': subset[0]['orth'],
+                                'lemma': subset[0]['lemma'], 'sentence': val},
+                                'target': {'word': subset[1]['orth'],
+                                'lemma': subset[1]['lemma'], 'sentence': val},
+                                'device': 'within sentence'})
 
     # Get hypernym hyponym pairs
     hyponym_hyper_pairs = getHypoHyperPairs(sentences, gn)
@@ -833,18 +873,4 @@ text9 = """Es belastet mich, dass Michael mit jemand anderem schläfst.
 text10 = """Mit der Belastung kann ich nicht leben. Es belastet mich, dass Franz fremd gegangen ist.
     Ich schlafe im Garten. Der Schlaf tat an diesem Tag gut."""
 
-text11 = """Unter intrinsischer Belastung versteht man die Art der kognitiven Belastung, die durch das Lernmaterial selbst bedingt ist bzw. von der Schwierigkeit und der Komplexität des Lernmaterials abhängt. Je schwieriger das Lernmaterial ist, desto höher ist demnach die intrinsische Belastung. Dabei spielt die Elementinteraktivität eine sehr wichtige Rolle, wobei sich Sweller (2003) auf den gesamten cognitive load bezieht. So gibt es auf der einen Seite Elemente, welche unabhängig voneinander gelernt werden können. Diese können einzeln gelernt und verstanden werden, wobei hier Verständnis als die Fähigkeit definiert wird, alle Elemente, welche notwendigerweise miteinander zusammenhängen, gleichzeitig im Arbeitsgedächtnis verarbeiten zu können. Das Erlernen von Material, welches aus solchen Elementen besteht, verursacht nur einen geringen cognitive load. Sweller (2003) spricht hierbei von low element interactivity material. Das Erlernen des Vokabulars einer Fremdsprache wäre hierfür ein konkretes Beispiel, da zum Beispiel die Anzahl der Vokabeln vielleicht sehr groß sein mag, das Verständnis aber trotzdem nicht darunter leidet, da Vokabeln einzeln und hintereinander gelernt werden können.
-
-Auf der anderen Seite gibt es Elemente, welche stark miteinander zusammenhängen, es existiert damit eine sehr hohe Elementinteraktivität. Hierbei entsteht ein hoher cognitive load, da die Informationen gleichzeitig verarbeitet werden müssen, um so ein hohes Verständnis beim Lernenden zu erreichen. Werden die Informationen nur hintereinander gelernt und verarbeitet, dann wird zwar auswendig gelernt, aber es werden so keinerlei Verknüpfungen zwischen den verschiedenen Elementen hergestellt. Der gesamte cognitive load sinkt dadurch, aber es findet nach Sweller (2003) kein Verständnis statt, und er bezeichnet solch komplexes Material als high element interactivity material. Ein Beispiel dafür wäre die Syntax einer Fremdsprache, da hier alles gleichzeitig verarbeitet werden muss, um das Material zu verstehen. Findet keine gleichzeitige Verarbeitung statt, dann wird auswendig gelernt. Einfacher ausgedrückt: Beim Verständnislernen ist der gesamte cognitive load hoch, bei reinem Auswendiglernen ist er niedrig. Verständnis für gelerntes Material entsteht nach Sweller et al. (1998) nur bei hoher Elementinteraktivität, wobei das Vorwissen des Lernenden einen entscheidenden Einfluss darauf hat. Je mehr passendes Vorwissen eine Person besitzt, desto niedriger kann ein möglicher intrinsic cognitive load werden.
-
-
-
-Bier ist ein Nahrungs- und Genussmittel, das durch Gärung aus Malz oder aus stärkehaltiger Rohfrucht (Malzersatzstoffe) gewonnen und nicht destilliert wird. Bei der Herstellung des kohlensäure-haltigen Getränks werden Hopfen oder andere Würzstoffe zugesetzt, etwa Früchte, Kräuter wie Grut oder auch andere Gewürze.
-
-Die Abgrenzung zu Wein besteht darin, dass für Weine Zucker aus pflanzlichen oder tierischen Quellen (zum Beispiel Honig) vergoren werden, während der Ausgangsstoff für die Gärung bei Bier immer Stärke ist. Der Zucker wird aus der Stärke von Getreide (Gerste, Roggen, Reis, Weizen, Mais) durch Mälzen oder andere enzymatische Verfahren gewonnen, seltener wird Stärke aus Kartoffeln oder anderem Gemüse wie Erbsen herangezogen.
-
-Der Alkoholgehalt der meisten Biersorten liegt in Deutschland und Österreich zwischen 4,5 % und 6 %. Alkoholfreie Biere werden durch zwei verschiedene Verfahren – Abbrechen der Gärung oder durch Extraktion des Alkohols aus normalen Bieren – erzeugt.
-
-Im weiteren Sinne wird jedes alkoholhaltige Getränk, das auf Basis von verzuckerter Stärke hergestellt wird, ohne dass dabei ein Destillationsverfahren zum Einsatz kommen muss, als Bier bezeichnet. Das südamerikanische Chicha, das äthiopische Tella, der osteuropäische Kwas und der japanische Sake – oft als „Reiswein“ bezeichnet – sind in diesem Sinne ebenfalls Biere."""
-
-print(analyzeTextCohesion(text11))
+print(analyzeTextCohesion(text2))
