@@ -752,9 +752,17 @@ def analyzeTextCohesion(text):
     # Get stem relations
     stem_relations = get_stem_relations(sentences, gn)
 
-    # Merge all word pairs
+    # # Merge all word pairs
     word_pairs = word_pairs + hyponym_hyper_pairs + coreferences + compounds + \
         stem_relations
+
+    ######################################
+    # Calculate number of relations
+    ######################################
+
+    word_tuples = map(lambda x: (x['source']['lemma'], x['target']['lemma']), word_pairs)
+    word_tuples = list(set([(pair['source']['lemma'], pair['target']['lemma'])
+        for pair in word_pairs if pair['source']['lemma'] != pair['target']['lemma']]))
 
     # Calc number of sentences
     num_sentences = len(sentences)
@@ -805,6 +813,7 @@ def analyzeTextCohesion(text):
             'numSentences': num_sentences,
             'numConcepts': num_concepts,
             'clusters': cluster,
+            'numRelations': len(word_tuples),
             'numCluster': len(cluster),
             'local cohesion': local_cohesion['local_cohesion'],
             'cohSentences': local_cohesion['cohSentences'],
@@ -902,4 +911,4 @@ text9 = """Es belastet mich, dass Michael mit jemand anderem schläfst.
 text10 = """Mit der Belastung kann ich nicht leben. Es belastet mich, dass Franz fremd gegangen ist.
     Ich schlafe im Garten. Der Schlaf tat an diesem Tag gut."""
 
-print(analyzeTextCohesion(text))
+# print(analyzeTextCohesion(text))
