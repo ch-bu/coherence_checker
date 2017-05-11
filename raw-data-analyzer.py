@@ -16,22 +16,22 @@ data_with_values = DataFrame(columns=('id', 'subject', 'text',
     'num_coh_sentences', 'num_non_coh_sentences'))
 
 for index, row in data.iterrows():
-    # print(row['text'])
-    # print(type(row['text']))
+    # Analyze current text
     res = analyzeTextCohesion(row['text'].encode('utf-8'))
+
+    # Retrieve important variables from data
     sentences = res['numSentences']
     clusters = res['numCluster']
     local_cohesion = res['local cohesion']
     num_concepts = res['numConcepts']
     num_coh_sentences = res['cohSentences']
     num_non_coh_sentences = res['cohNotSentences']
+    num_relations = res['numRelations']
 
+    # Add row to data frame
     data_with_values.loc[index] = [row['id'], row['subject'], row['text'],
         sentences, clusters, local_cohesion, num_concepts,
         num_coh_sentences, num_non_coh_sentences]
-
-    print(data_with_values)
-    # print ['id'], row['subject']
 
 # Save data as csv
 data_with_values.to_csv(
