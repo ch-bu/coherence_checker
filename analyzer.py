@@ -740,6 +740,19 @@ def analyzeTextCohesion(text):
                                 'lemma': subset[1]['lemma'], 'sentence': val},
                                 'device': 'within sentence'})
 
+
+    # # Get hypernym hyponym pairs
+    # hyponym_hyper_pairs = []
+
+    # # Get coreference resolutions
+    # coreferences = []
+
+    # # Get compounds
+    # compounds = []
+
+    # # Get stem relations
+    # stem_relations = []
+
     # Get hypernym hyponym pairs
     hyponym_hyper_pairs = getHypoHyperPairs(sentences, gn)
 
@@ -752,9 +765,12 @@ def analyzeTextCohesion(text):
     # Get stem relations
     stem_relations = get_stem_relations(sentences, gn)
 
-    # # Merge all word pairs
+    # Merge all word pairs
     word_pairs = word_pairs + hyponym_hyper_pairs + coreferences + compounds + \
         stem_relations
+
+    # # Merge all word pairs
+    # word_pairs = word_pairs + hyponym_hyper_pairs + coreferences + compounds
 
     ######################################
     # Calculate number of relations
@@ -819,7 +835,11 @@ def analyzeTextCohesion(text):
             'cohSentences': local_cohesion['cohSentences'],
             'cohNotSentences': local_cohesion['cohNotSentences'],
             'lemmaWordRelations': word_lemma_mapping['lemma_word'],
-            'wordLemmaRelations': word_lemma_mapping['word_lemma']}
+            'wordLemmaRelations': word_lemma_mapping['word_lemma'],
+            'numCompounds': len(compounds),
+            'numCoreferences': len(coreferences),
+            'numStemRelations': len(stem_relations),
+            'numHypoHyper': len(hyponym_hyper_pairs)}
 
 
 text = """Im Folgenden möchte ich euch das Modell
@@ -911,4 +931,4 @@ text9 = """Es belastet mich, dass Michael mit jemand anderem schläfst.
 text10 = """Mit der Belastung kann ich nicht leben. Es belastet mich, dass Franz fremd gegangen ist.
     Ich schlafe im Garten. Der Schlaf tat an diesem Tag gut."""
 
-# print(analyzeTextCohesion(text))
+print(analyzeTextCohesion(text9))
