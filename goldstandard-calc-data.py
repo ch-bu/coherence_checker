@@ -2,6 +2,7 @@
 
 from pandas import DataFrame
 from analyzer import get_clusters
+import csv
 
 def rewrite_text_rating(text):
     """
@@ -109,7 +110,7 @@ def local_cohesion_analysis(text):
 
 
 # Path to rating file
-path = '/home/christian/Repositories/goldstandardstudy-ss17/data/rater-data/probe-ricarda-3.csv'
+path = '/home/christian/Repositories/goldstandardstudy-ss17/data/rater-data/rating_ricarda.csv'
 
 # Read data from csv
 rating = DataFrame.from_csv(path, sep=',', index_col=False,
@@ -119,22 +120,39 @@ rating = DataFrame.from_csv(path, sep=',', index_col=False,
 # We want to analyze every text on it's own
 texts = rating.groupby(['id.text'])
 
-for text in texts:
-    # Get word pairs
-    rating_nested = rewrite_text_rating(text)
+# Write data to disk
+# DataFrame.to_csv(rating)
+import csv
 
-    # Get dependent variables
-    number_of_clusters = len(get_clusters(rating_nested, [1, 2, 3]))
-    number_of_relations = get_number_of_relations(rating_nested)
-    number_of_concepts = set([pair['source']['lemma']
-                for pair in rating_nested]).union([pair['target']['lemma']
-                for pair in rating_nested])
 
-    local_cohesion = local_cohesion_analysis(rating_nested)
+with open('/home/christian/Repositories/goldstandardstudy-ss17/data/rater-data/rating_ricarda_output.csv', 'wb') as csvfile:
+    spamwriter = csv.writer(csvfile, delimiter=';',
+                            quotechar='|', quoting=csv.QUOTE_MINIMAL)
+    spamwriter.writerow(['id', 'number_clusters',
+                         'number_relations', 'number_concepts',
+                         'local_cohesion', 'number_sentences'])
 
-    print('############ %s #############' % text[0])
-    print('Number of clusters: %s' % number_of_clusters)
-    print('Number of relations: %s' % number_of_relations)
-    print('Number of concepts: %s' % len(number_of_concepts))
-    print('Local cohesion: %s' % local_cohesion['local_cohesion'])
-    print('Number of sentences: %s' % local_cohesion['number_sentences'])
+    for text in texts:
+        # Get word pairs
+        rating_nested = rewrite_text_rating(text)
+
+        # Get dependent variables
+        number_of_clusters = len(get_clusters(rating_nested, [1, 2, 3]))
+        number_of_relations = get_number_of_relations(rating_nested)
+        number_of_concepts = set([pair['source']['lemma']
+                    for pair in rating_nested]).union([pair['target']['lemma']
+                    for pair in rating_nested])
+
+        local_cohesion = local_cohesion_analysis(rating_nested)
+
+        print('############ %s #############' % text[0])
+        print('Number of clusters: %s' % number_of_clusters)
+        print('Number of relations: %s' % number_of_relations)
+        print('Number of concepts: %s' % len(number_of_concepts))
+        print('Local cohesion: %s' % local_cohesion['local_cohesion'])
+        print('Number of sentences: %s' % local_cohesion['number_sentences'])
+
+        spamwriter.writerow([text[0], number_of_clusters,
+                             number_of_relations, len(number_of_concepts),
+                             local_cohesion['local_cohesion'],
+                             local_cohesion['number_sentences']])
