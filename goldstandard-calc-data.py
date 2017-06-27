@@ -73,7 +73,7 @@ def local_cohesion_analysis(text):
     connected_sentences = []
 
     # Calculate number of sentences
-    num_sentences = max([key for key, index in sentence_index.iteritems()])
+    num_sentences = int(max([key for key, index in sentence_index.iteritems()]))
 
     # Get tuples of bridged sentences
     for index in range(1, num_sentences + 1):
@@ -110,7 +110,7 @@ def local_cohesion_analysis(text):
 
 
 # Path to rating file
-path = '/home/christian/Repositories/goldstandardstudy-ss17/data/rater-data/rating_ricarda.csv'
+path = '/home/christian/Repositories/goldstandardstudy-ss17/data/ricarda-100.csv'
 
 # Read data from csv
 rating = DataFrame.from_csv(path, sep=',', index_col=False,
@@ -118,14 +118,14 @@ rating = DataFrame.from_csv(path, sep=',', index_col=False,
 
 # Group text by text id
 # We want to analyze every text on it's own
-texts = rating.groupby(['id.text'])
+texts = rating.groupby(['id'])
 
 # Write data to disk
 # DataFrame.to_csv(rating)
 import csv
 
 
-with open('/home/christian/Repositories/goldstandardstudy-ss17/data/rater-data/rating_ricarda_output.csv', 'wb') as csvfile:
+with open('/home/christian/Repositories/goldstandardstudy-ss17/data/ricarda-100-analyzed.csv', 'wb') as csvfile:
     spamwriter = csv.writer(csvfile, delimiter=';',
                             quotechar='|', quoting=csv.QUOTE_MINIMAL)
     spamwriter.writerow(['id', 'number_clusters',

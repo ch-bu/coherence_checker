@@ -741,16 +741,16 @@ def analyzeTextCohesion(text):
                                 'device': 'within sentence'})
 
 
-    # # Get hypernym hyponym pairs
+    # Get hypernym hyponym pairs
     # hyponym_hyper_pairs = []
 
-    # # Get coreference resolutions
+    # Get coreference resolutions
     # coreferences = []
 
-    # # Get compounds
+    # Get compounds
     # compounds = []
 
-    # # Get stem relations
+    # Get stem relations
     # stem_relations = []
 
     # Get hypernym hyponym pairs
@@ -769,7 +769,7 @@ def analyzeTextCohesion(text):
     word_pairs = word_pairs + hyponym_hyper_pairs + coreferences + compounds + \
         stem_relations
 
-    # # Merge all word pairs
+    # Merge all word pairs
     # word_pairs = word_pairs + hyponym_hyper_pairs + coreferences + compounds
 
     ######################################
@@ -931,4 +931,4 @@ text9 = """Es belastet mich, dass Michael mit jemand anderem schläfst.
 text10 = """Mit der Belastung kann ich nicht leben. Es belastet mich, dass Franz fremd gegangen ist.
     Ich schlafe im Garten. Der Schlaf tat an diesem Tag gut."""
 
-print(analyzeTextCohesion(text9))
+# print(analyzeTextCohesion(text8))
