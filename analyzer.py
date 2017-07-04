@@ -849,6 +849,15 @@ def analyzeTextCohesion(text):
 
         # Loop over every word in current sentence
         for word in words:
+            # We need to reset the carrier for every word otherwise
+            # every word will be appended with the carrier
+            carrier = None
+
+            # Check if word ends with a special character
+            if word.endswith(':') or word.endswith(',') or word.endswith(';'):
+                carrier = word[-1]
+                word = re.sub(r'[:,;]', '', word)
+
             # Check if there is a lemma for current word and catch
             # any KeyError
             try:
@@ -859,21 +868,24 @@ def analyzeTextCohesion(text):
                 cluster = word_cluster_index[lemma]
 
                 # Append html string with span tag and according class
-                html_string += '<span class="cluster-' + str(cluster) + '">' + word + '</span> '
+                html_string += '<span class="cluster-' + str(cluster) + '">' + word + '</span>'
             # The word does not occur in the word lemma dicitonary
             # It should not be assigned a class for highlighting
             except KeyError:
-                html_string += '<span>' + word + '</span> '
+                html_string += '<span>' + word + '</span>'
+
+            # Append carrier if it exists
+            html_string += carrier if carrier else ''
+            html_string += ' '
+
 
         # Append end of line character and add an empty space.
         # The empty space is necessary otherwise the next sentence
         # will directly align to the current sentence
         html_string = html_string[:-1]
-        html_string += end_of_line_character + ' '
+        html_string += end_of_line_character + '&#9763; '
 
-
-
-    print(html_string)
+    # print(html_string)
 
     # return {'word_pairs': word_pairs,
     #         'links': links,
