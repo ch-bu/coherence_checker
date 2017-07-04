@@ -647,10 +647,10 @@ def analyzeTextCohesion(text):
 
     # Get specific elements of words
     tags = getPOSElement('singular', r'.*Sg', tags)
-    tags = getPOSElement('accusative', r'.*N.Reg.Acc', tags)
-    tags = getPOSElement('dative', r'.*N.Reg.Dat', tags)
+    tags = getPOSElement('accusative', r'.*N.(Reg|Name).Acc', tags)
+    tags = getPOSElement('dative', r'.*N.(Reg|Name).Dat', tags)
     tags = getPOSElement('nominative', r'.*N.(Reg|Name).Nom', tags)
-    tags = getPOSElement('genitive', r'.*N.Reg.Gen', tags)
+    tags = getPOSElement('genitive', r'.*N.(Reg|Name).Gen', tags)
     tags = getPOSElement('feminin', r'.*Fem', tags)
     tags = getPOSElement('neutrum', r'.*Neut', tags)
     tags = getPOSElement('noun', r'.*N.Name.*|.*N.Reg', tags)
@@ -727,14 +727,16 @@ def analyzeTextCohesion(text):
                 for subset in itertools.combinations_with_replacement(nouns_full, 2):
                     if subset[0] != subset[1]:
                         # Combine accusative with dative
-                        if subset[0]['accusative'] and subset[1]['dative']:
+                        if subset[0]['accusative'] and subset[1]['dative'] and \
+                           subset[0]['genitive']:
                             # Append word pairs
                             word_pairs.append({'source': {'word': subset[0]['orth'],
                                 'lemma': subset[0]['lemma'], 'sentence': val},
                                 'target': {'word': subset[1]['orth'],
                                 'lemma': subset[1]['lemma'], 'sentence': val},
                                 'device': 'within sentence'})
-                        elif subset[1]['accusative'] and subset[0]['dative']:
+                        elif subset[1]['accusative'] and subset[0]['dative'] and \
+                             subset[1]['genitive']:
                             # Append word pairs
                             word_pairs.append({'source': {'word': subset[0]['orth'],
                                 'lemma': subset[0]['lemma'], 'sentence': val},
@@ -871,7 +873,7 @@ def analyzeTextCohesion(text):
 
 
 
-    # print(html_string)
+    print(html_string)
 
     # return {'word_pairs': word_pairs,
     #         'links': links,
