@@ -11,6 +11,11 @@ from nltk.stem.snowball import GermanStemmer
 from nltk.tokenize import sent_tokenize
 import itertools
 
+# def catch(func, handle=lambda e : e, *args, **kwargs):
+#     try:
+#         return func(*args, **kwargs)
+#     except Exception as e:
+#         return handle(e)
 
 def getPOSElement(element, regex, tags):
     """Returns an array with a boolean
@@ -834,15 +839,25 @@ def analyzeTextCohesion(text):
     # Split words within sentences
     words_split_per_sentence = [sentence.split() for sentence in tokenized_sentences]
 
+    # print(words_split_per_sentence)
     # Prepare html string
     html_string = ''
 
     # Loop over every sentence
-    for sentence in words_split_per_sentence:
+    for index, sentence in enumerate(words_split_per_sentence):
         # Store the end of line character
         # We need to store the character to append it
         # afterwards
         end_of_line_character = sentence[-1][-1]
+
+        # Reset cluster_change to false
+        # previous_cluster = 0
+        # cluster_changed = False
+        # Check if cluster changes for next sentence
+        # if index != (len(words_split_per_sentence) - 1):
+            # lemma_current = [word_lemma_mapping['word_lemma'][word][0] for word in sentence]
+            # lemma_current = [catch(lambda : word_lemma_mapping['word_lemma'][word][0]) for word in sentence]
+            # print(lemma_current)
 
         # Remove end of line characters
         words = [re.sub(r'[.\!?]', '', s) for s in sentence]
@@ -864,11 +879,17 @@ def analyzeTextCohesion(text):
                 # Get lemma for word
                 lemma = word_lemma_mapping['word_lemma'][word][0]
 
+                # Check if cluster changes
+                # Get clusters of current sentence
+                # if word_cluster_index[lemma] != previous_cluster:
+                    # cluster_changed = True
+
                 # Get cluster number for word
                 cluster = word_cluster_index[lemma]
 
                 # Append html string with span tag and according class
                 html_string += '<span class="cluster-' + str(cluster) + '">' + word + '</span>'
+
             # The word does not occur in the word lemma dicitonary
             # It should not be assigned a class for highlighting
             except KeyError:
@@ -879,11 +900,16 @@ def analyzeTextCohesion(text):
             html_string += ' '
 
 
+        # Reassign previous cluster
+        # previous_cluster = word_cluster_index[lemma]
+
         # Append end of line character and add an empty space.
         # The empty space is necessary otherwise the next sentence
         # will directly align to the current sentence
         html_string = html_string[:-1]
-        html_string += end_of_line_character + '&#9763; '
+        html_string += end_of_line_character
+        # html_string += '&#9763; ' if cluster_changed else ''
+        html_string += ' '
 
     # print(html_string)
 
