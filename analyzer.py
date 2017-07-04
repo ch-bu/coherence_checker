@@ -8,6 +8,7 @@ import numpy as np
 from pygermanet import load_germanet
 from more_itertools import unique_everseen
 from nltk.stem.snowball import GermanStemmer
+from nltk.tokenize import sent_tokenize
 import itertools
 
 
@@ -573,8 +574,8 @@ def analyzeTextCohesion(text):
     """
 
     # Check if text is string or unicode
-    if type(text) is not str:
-        raise TypeError('you did not pass a string as argument')
+    # if type(text) is not str:
+        # raise TypeError('you did not pass a string as argument')
 
     # Remove brackets and parenthesis from text
     text = re.sub(r"[\(\[].*?[\)\]]", "", text)
@@ -681,7 +682,7 @@ def analyzeTextCohesion(text):
         nouns_full = [word for word in sentence if word['noun']]
         nominatives = filter(lambda x: x['nominative'], sentence)
 
-        # Append noun if it only occurs once
+        # There is only one noun in the current sentence
         if len(nouns) == 1:
             # Append lonely noun
             word_pairs.append({'source': {'word': nouns_full[0]['orth'],
@@ -689,9 +690,9 @@ def analyzeTextCohesion(text):
                 'target': {'word': nouns_full[0]['orth'], 'lemma': nouns_full[0]['lemma'], 'sentence': val},
                 'device': 'single word'})
 
-        # If there are multiple nouns append all combinations of nouns
+        # There are at least two nouns in the sentence
         elif len(nouns) > 1:
-            # Check if there are nominatives within the sentence
+            # There is a nominative among the nouns
             if len(nominatives) > 0:
                 # Loop over every combination of nouns in current sentence
                 for subset in itertools.combinations_with_replacement(nouns_full, 2):
@@ -701,7 +702,7 @@ def analyzeTextCohesion(text):
                             # Only combine nominatives with accusative, dative
                             # and genitive
                             if subset[1]['accusative'] or subset[1]['dative'] or \
-                                subset[1]['genitive']:
+                                subset[1]['genitive'] or subset[1]['nominative']:
                                 # Append word pairs
                                 word_pairs.append({'source': {'word': subset[0]['orth'],
                                     'lemma': subset[0]['lemma'], 'sentence': val},
@@ -713,13 +714,14 @@ def analyzeTextCohesion(text):
                             # Only combine nominatives with accusative, dative,
                             # and genitive
                             if subset[0]['accusative'] or subset[0]['dative'] or \
-                                subset[0]['genitive']:
+                                subset[0]['genitive'] or subset[0]['nominative']:
                                 # Append word pairs
                                 word_pairs.append({'source': {'word': subset[1]['orth'],
                                     'lemma': subset[1]['lemma'], 'sentence': val},
                                     'target': {'word': subset[0]['orth'],
                                     'lemma': subset[0]['lemma'], 'sentence': val},
                                     'device': 'within sentence'})
+            # There are no nominatives in the sentence
             else:
                 # Loop over every combination of nouns in current sentence
                 for subset in itertools.combinations_with_replacement(nouns_full, 2):
@@ -768,9 +770,6 @@ def analyzeTextCohesion(text):
     # Merge all word pairs
     word_pairs = word_pairs + hyponym_hyper_pairs + coreferences + compounds + \
         stem_relations
-
-    # Merge all word pairs
-    # word_pairs = word_pairs + hyponym_hyper_pairs + coreferences + compounds
 
     ######################################
     # Calculate number of relations
@@ -823,23 +822,74 @@ def analyzeTextCohesion(text):
     num_concepts = len(set([concept['lemma']
                 for concept in tags if concept['noun'] == True]))
 
-    return {'word_pairs': word_pairs,
-            'links': links,
-            'nodes': nodes,
-            'numSentences': num_sentences,
-            'numConcepts': num_concepts,
-            'clusters': cluster,
-            'numRelations': len(word_tuples),
-            'numCluster': len(cluster),
-            'local cohesion': local_cohesion['local_cohesion'],
-            'cohSentences': local_cohesion['cohSentences'],
-            'cohNotSentences': local_cohesion['cohNotSentences'],
-            'lemmaWordRelations': word_lemma_mapping['lemma_word'],
-            'wordLemmaRelations': word_lemma_mapping['word_lemma'],
-            'numCompounds': len(compounds),
-            'numCoreferences': len(coreferences),
-            'numStemRelations': len(stem_relations),
-            'numHypoHyper': len(hyponym_hyper_pairs)}
+    #######################################
+    # Render text for integrated group
+    #######################################
+
+    # Split text into sentences
+    tokenized_sentences = sent_tokenize(text.decode('utf-8'))
+
+    # Split words within sentences
+    words_split_per_sentence = [sentence.split() for sentence in tokenized_sentences]
+
+    # Prepare html string
+    html_string = ''
+
+    # Loop over every sentence
+    for sentence in words_split_per_sentence:
+        # Store the end of line character
+        # We need to store the character to append it
+        # afterwards
+        end_of_line_character = sentence[-1][-1]
+
+        # Remove end of line characters
+        words = [re.sub(r'[.\!?]', '', s) for s in sentence]
+
+        # Loop over every word in current sentence
+        for word in words:
+            # Check if there is a lemma for current word and catch
+            # any KeyError
+            try:
+                # Get lemma for word
+                lemma = word_lemma_mapping['word_lemma'][word][0]
+
+                # Get cluster number for word
+                cluster = word_cluster_index[lemma]
+
+                # Append html string with span tag and according class
+                html_string += '<span class="cluster-' + str(cluster) + '">' + word + '</span> '
+            # The word does not occur in the word lemma dicitonary
+            # It should not be assigned a class for highlighting
+            except KeyError:
+                html_string += '<span>' + word + '</span> '
+
+        # Append end of line character and add an empty space.
+        # The empty space is necessary otherwise the next sentence
+        # will directly align to the current sentence
+        html_string = html_string[:-1]
+        html_string += end_of_line_character + ' '
+
+
+
+    # print(html_string)
+
+    # return {'word_pairs': word_pairs,
+    #         'links': links,
+    #         'nodes': nodes,
+    #         'numSentences': num_sentences,
+    #         'numConcepts': num_concepts,
+    #         'clusters': cluster,
+    #         'numRelations': len(word_tuples),
+    #         'numCluster': len(cluster),
+    #         'local cohesion': local_cohesion['local_cohesion'],
+    #         'cohSentences': local_cohesion['cohSentences'],
+    #         'cohNotSentences': local_cohesion['cohNotSentences'],
+    #         'lemmaWordRelations': word_lemma_mapping['lemma_word'],
+    #         'wordLemmaRelations': word_lemma_mapping['word_lemma'],
+    #         'numCompounds': len(compounds),
+    #         'numCoreferences': len(coreferences),
+    #         'numStemRelations': len(stem_relations),
+    #         'numHypoHyper': len(hyponym_hyper_pairs)}
 
 
 text = """Im Folgenden möchte ich euch das Modell
@@ -903,9 +953,13 @@ text2 = """Die Cognitive-Load-Theory geht davon aus, dass der Speicher des
     Probleme."""
 
 text3 = """Das Wissen zeichnet einen Menschen aus. Sprachkenntnis zum
-    Beispiel ist wichtig, da Menschen sonst nicht Sprechen können. Der Bezug
-    zur Realität ermöglicht dies. Vor allem der Praxisbezug ist dabei wichtig.
+    Beispiel ist wichtig, da Menschen sonst nicht Sprechen koennen. Der Bezug
+    zur Realitt ermglicht dies. Vor allem der Praxisbezug ist dabei wichtig.
     """
+
+text12 = """Das Wissen zeichnet einen Menschen aus. Sprachkenntnis zum
+    Beispiel ist wichtig, da Menschen sonst nicht sprechen koennen. Der Bezug
+    zur Realität ermöglicht dies. Vor allem der Praxisbezug ist dabei wichtig."""
 
 text4 = """Habichtschwamm kam in das Zimmer herein. Dieser Schwamm
     ist eine tolle Sache. Er gab der Haarzelle eine Schockolade.
@@ -920,7 +974,7 @@ text7 = """Der Sänger war toll. Die Opernsänger begann mit einem Solo.
 
 text8 = """Es gibt verschiedene Pflanzen auf der Welt.
     Baumwollpflanzen beispielsweise werden im Haus benutzt.
-    Ein Bier ist kein Wein. Die Weine sind im Garten. Das Portfolio ist gut geworden."""
+    Ein Bier ist kein Wein. Die Weine sind im Garten. Das Portfolio ist gut geworden?"""
 
 text9 = """Es belastet mich, dass Michael mit jemand anderem schläfst.
     Der Schlaf ist keine Belastung für mich. Franz brütet Nägel in die Wand.
@@ -931,4 +985,9 @@ text9 = """Es belastet mich, dass Michael mit jemand anderem schläfst.
 text10 = """Mit der Belastung kann ich nicht leben. Es belastet mich, dass Franz fremd gegangen ist.
     Ich schlafe im Garten. Der Schlaf tat an diesem Tag gut."""
 
-# print(analyzeTextCohesion(text8))
+text11 = """Lisbeth möchte in das Kino. Im Kino gibt es Popcorn."""
+
+text13 = "Ein Bier ist kein Wein. Schule ist doof."
+
+print(analyzeTextCohesion(text))
+#
