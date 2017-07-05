@@ -11,11 +11,6 @@ from nltk.stem.snowball import GermanStemmer
 from nltk.tokenize import sent_tokenize
 import itertools
 
-# def catch(func, handle=lambda e : e, *args, **kwargs):
-#     try:
-#         return func(*args, **kwargs)
-#     except Exception as e:
-#         return handle(e)
 
 def getPOSElement(element, regex, tags):
     """Returns an array with a boolean
@@ -845,19 +840,13 @@ def analyzeTextCohesion(text):
 
     # Loop over every sentence
     for index, sentence in enumerate(words_split_per_sentence):
+        # Store cluster uf current sentence
+        cluster_current = []
+
         # Store the end of line character
         # We need to store the character to append it
         # afterwards
         end_of_line_character = sentence[-1][-1]
-
-        # Reset cluster_change to false
-        # previous_cluster = 0
-        # cluster_changed = False
-        # Check if cluster changes for next sentence
-        # if index != (len(words_split_per_sentence) - 1):
-            # lemma_current = [word_lemma_mapping['word_lemma'][word][0] for word in sentence]
-            # lemma_current = [catch(lambda : word_lemma_mapping['word_lemma'][word][0]) for word in sentence]
-            # print(lemma_current)
 
         # Remove end of line characters
         words = [re.sub(r'[.\!?]', '', s) for s in sentence]
@@ -879,13 +868,11 @@ def analyzeTextCohesion(text):
                 # Get lemma for word
                 lemma = word_lemma_mapping['word_lemma'][word][0]
 
-                # Check if cluster changes
-                # Get clusters of current sentence
-                # if word_cluster_index[lemma] != previous_cluster:
-                    # cluster_changed = True
-
                 # Get cluster number for word
                 cluster = word_cluster_index[lemma]
+
+                # Push cluster ot current cluster list
+                cluster_current.append(cluster)
 
                 # Append html string with span tag and according class
                 html_string += '<span class="cluster-' + str(cluster) + '">' + word + '</span>'
@@ -899,37 +886,56 @@ def analyzeTextCohesion(text):
             html_string += carrier if carrier else ''
             html_string += ' '
 
+        ############################################################
+        # Check if cluster changes for next sentence
+        ############################################################
+        if index != (len(words_split_per_sentence) - 1):
+            # Get words for next sentence
+            words_next_sentence = [re.sub(r'[.\!?]', '', s) for s in words_split_per_sentence[index + 1]]
 
-        # Reassign previous cluster
-        # previous_cluster = word_cluster_index[lemma]
+            # Initialize cluster of next sentence
+            cluster_next = []
+
+            for word in words_next_sentence:
+                # Catch errors
+                try:
+                    lemma = word_lemma_mapping['word_lemma'][word][0]
+
+                    cluster = word_cluster_index[lemma]
+
+                    cluster_next.append(cluster)
+                except KeyError:
+                    pass
+
+        # See if cluster of adjacent sentence differ
+        cluster_changed = set(cluster_current) != set(cluster_next)
 
         # Append end of line character and add an empty space.
         # The empty space is necessary otherwise the next sentence
         # will directly align to the current sentence
         html_string = html_string[:-1]
         html_string += end_of_line_character
-        # html_string += '&#9763; ' if cluster_changed else ''
+        html_string += '&#8660; ' if cluster_changed else ''
         html_string += ' '
 
-    # print(html_string)
-
-    # return {'word_pairs': word_pairs,
-    #         'links': links,
-    #         'nodes': nodes,
-    #         'numSentences': num_sentences,
-    #         'numConcepts': num_concepts,
-    #         'clusters': cluster,
-    #         'numRelations': len(word_tuples),
-    #         'numCluster': len(cluster),
-    #         'local cohesion': local_cohesion['local_cohesion'],
-    #         'cohSentences': local_cohesion['cohSentences'],
-    #         'cohNotSentences': local_cohesion['cohNotSentences'],
-    #         'lemmaWordRelations': word_lemma_mapping['lemma_word'],
-    #         'wordLemmaRelations': word_lemma_mapping['word_lemma'],
-    #         'numCompounds': len(compounds),
-    #         'numCoreferences': len(coreferences),
-    #         'numStemRelations': len(stem_relations),
-    #         'numHypoHyper': len(hyponym_hyper_pairs)}
+    return {'word_pairs': word_pairs,
+            'links': links,
+            'nodes': nodes,
+            'numSentences': num_sentences,
+            'numConcepts': num_concepts,
+            'clusters': cluster,
+            'numRelations': len(word_tuples),
+            'numCluster': len(cluster),
+            'local cohesion': local_cohesion['local_cohesion'],
+            'cohSentences': local_cohesion['cohSentences'],
+            'cohNotSentences': local_cohesion['cohNotSentences'],
+            'lemmaWordRelations': word_lemma_mapping['lemma_word'],
+            'wordLemmaRelations': word_lemma_mapping['word_lemma'],
+            'numCompounds': len(compounds),
+            'numCoreferences': len(coreferences),
+            'numStemRelations': len(stem_relations),
+            'numHypoHyper': len(hyponym_hyper_pairs),
+            'html_string': html_string}
 
 
 text = """Im Folgenden möchte ich euch das Modell
@@ -1029,5 +1035,5 @@ text11 = """Lisbeth möchte in das Kino. Im Kino gibt es Popcorn."""
 
 text13 = "Ein Bier ist kein Wein. Schule ist doof."
 
-print(analyzeTextCohesion(text))
-#
+print(analyzeTextCohesion(text7))
+
