@@ -565,6 +565,118 @@ def get_lemma_mapping(word_pairs):
             'word_lemma': word_lemma_dic_non_redundant}
 
 
+def generateHTML(paragraph_split, word_lemma_mapping, word_cluster_index):
+    """Generates the html for the editor
+    """
+
+    for paragraph in paragraph_split:
+        #######################################
+        # Render text for integrated group
+        #######################################
+
+        # Split text into sentences
+        tokenized_sentences = sent_tokenize(paragraph.decode('utf-8'))
+
+        # Split words within sentences
+        words_split_per_sentence = [sentence.split() for sentence in tokenized_sentences]
+
+        # Prepare html string
+        html_string = '<p>'
+
+        # Loop over every sentence
+        for index, sentence in enumerate(words_split_per_sentence):
+            # Store cluster uf current sentence
+            cluster_current = []
+
+            # Store the end of line character
+            # We need to store the character to append it
+            # afterwards
+            end_of_line_character = sentence[-1][-1]
+
+            # Remove end of line characters
+            words = [re.sub(r'[.\!?]', '', s) for s in sentence]
+
+            # Loop over every word in current sentence
+            for word in words:
+                # We need to reset the carrier for every word otherwise
+                # every word will be appended with the carrier
+                carrier = None
+
+                # Check if word ends with a special character
+                if word.endswith(':') or word.endswith(',') or word.endswith(';'):
+                    carrier = word[-1]
+                    word = re.sub(r'[:,;]', '', word)
+
+                # Check if there is a lemma for current word and catch
+                # any KeyError
+                try:
+                    # Get lemma for word
+                    lemma = word_lemma_mapping['word_lemma'][word][0]
+
+                    # Get cluster number for word
+                    cluster_of_word = word_cluster_index[lemma]
+
+                    # Push cluster ot current cluster list
+                    cluster_current.append(cluster_of_word)
+
+                    # Append html string with span tag and according class
+                    html_string += '<span class="cluster-' + str(cluster_of_word) + '">' + word + '</span>'
+
+                # The word does not occur in the word lemma dicitonary
+                # It should not be assigned a class for highlighting
+                except KeyError:
+                    html_string += '<span>' + word + '</span>'
+
+                # Append carrier if it exists
+                html_string += carrier if carrier else ''
+                html_string += ' '
+
+            ############################################################
+            # Check if cluster changes for next sentence
+            ############################################################
+            if index != (len(words_split_per_sentence) - 1) \
+                    and len(tokenized_sentences) > 1:
+                # Get words for next sentence
+                words_next_sentence = [re.sub(r'[.\!?]', '', s) for s in words_split_per_sentence[index + 1]]
+
+                # Initialize cluster of next sentence
+                cluster_next = []
+
+                for word in words_next_sentence:
+                    # Catch errors
+                    try:
+                        lemma = word_lemma_mapping['word_lemma'][word][0]
+
+                        cluster_of_word_next_sentence = word_cluster_index[lemma]
+
+                        cluster_next.append(cluster_of_word_next_sentence)
+                    except KeyError:
+                        pass
+
+            # If we only have one sentence append only the end of line character
+            if len(tokenized_sentences) <= 1:
+                html_string = html_string[:-1]
+                html_string += end_of_line_character
+                html_string += ' '
+            # We have more than one sentence
+            else:
+                # See if cluster of adjacent sentence differ
+                cluster_changed = set(cluster_current) != set(cluster_next)
+
+                # Append end of line character and add an empty space.
+                # The empty space is necessary otherwise the next sentence
+                # will directly align to the current sentence
+                html_string = html_string[:-1]
+                html_string += end_of_line_character
+                html_string += '&#8660; ' if cluster_changed else ''
+                html_string += ' '
+
+        # End paragraph
+        html_string += '</p>'
+
+        print(html_string)
+
+
 def analyzeTextCohesion(text):
     """Analyzed the cohesion of a txt.
     Args:
@@ -576,6 +688,9 @@ def analyzeTextCohesion(text):
     # Check if text is string or unicode
     # if type(text) is not str:
         # raise TypeError('you did not pass a string as argument')
+
+    # Split text by line breaks
+    paragraph_split = text.split('[LINEBREAK]')
 
     # Remove brackets and parenthesis from text
     text = re.sub(r"[\(\[].*?[\)\]]", "", text)
@@ -824,99 +939,8 @@ def analyzeTextCohesion(text):
     num_concepts = len(set([concept['lemma']
                 for concept in tags if concept['noun'] == True]))
 
-    #######################################
-    # Render text for integrated group
-    #######################################
-
-    # Split text into sentences
-    tokenized_sentences = sent_tokenize(text.decode('utf-8'))
-
-    # Split words within sentences
-    words_split_per_sentence = [sentence.split() for sentence in tokenized_sentences]
-
-    # print(words_split_per_sentence)
-    # Prepare html string
-    html_string = ''
-
-    # Loop over every sentence
-    for index, sentence in enumerate(words_split_per_sentence):
-        # Store cluster uf current sentence
-        cluster_current = []
-
-        # Store the end of line character
-        # We need to store the character to append it
-        # afterwards
-        end_of_line_character = sentence[-1][-1]
-
-        # Remove end of line characters
-        words = [re.sub(r'[.\!?]', '', s) for s in sentence]
-
-        # Loop over every word in current sentence
-        for word in words:
-            # We need to reset the carrier for every word otherwise
-            # every word will be appended with the carrier
-            carrier = None
-
-            # Check if word ends with a special character
-            if word.endswith(':') or word.endswith(',') or word.endswith(';'):
-                carrier = word[-1]
-                word = re.sub(r'[:,;]', '', word)
-
-            # Check if there is a lemma for current word and catch
-            # any KeyError
-            try:
-                # Get lemma for word
-                lemma = word_lemma_mapping['word_lemma'][word][0]
-
-                # Get cluster number for word
-                cluster = word_cluster_index[lemma]
-
-                # Push cluster ot current cluster list
-                cluster_current.append(cluster)
-
-                # Append html string with span tag and according class
-                html_string += '<span class="cluster-' + str(cluster) + '">' + word + '</span>'
-
-            # The word does not occur in the word lemma dicitonary
-            # It should not be assigned a class for highlighting
-            except KeyError:
-                html_string += '<span>' + word + '</span>'
-
-            # Append carrier if it exists
-            html_string += carrier if carrier else ''
-            html_string += ' '
-
-        ############################################################
-        # Check if cluster changes for next sentence
-        ############################################################
-        if index != (len(words_split_per_sentence) - 1):
-            # Get words for next sentence
-            words_next_sentence = [re.sub(r'[.\!?]', '', s) for s in words_split_per_sentence[index + 1]]
-
-            # Initialize cluster of next sentence
-            cluster_next = []
-
-            for word in words_next_sentence:
-                # Catch errors
-                try:
-                    lemma = word_lemma_mapping['word_lemma'][word][0]
-
-                    cluster = word_cluster_index[lemma]
-
-                    cluster_next.append(cluster)
-                except KeyError:
-                    pass
-
-        # See if cluster of adjacent sentence differ
-        cluster_changed = set(cluster_current) != set(cluster_next)
-
-        # Append end of line character and add an empty space.
-        # The empty space is necessary otherwise the next sentence
-        # will directly align to the current sentence
-        html_string = html_string[:-1]
-        html_string += end_of_line_character
-        html_string += '&#8660; ' if cluster_changed else ''
-        html_string += ' '
+    # Generate html string for editor
+    html_string = generateHTML(paragraph_split, word_lemma_mapping, word_cluster_index)
 
     return {'word_pairs': word_pairs,
             'links': links,
@@ -941,14 +965,14 @@ def analyzeTextCohesion(text):
 text = """Im Folgenden möchte ich euch das Modell
     der Cognitive-Load-Theory erklären. Diese Theorie beschreibt die beim Lernen
     auftretenden Belastungen, bedingt durch die geringe Speicherkapazität
-    des Arbeitsgedächtnisses. Laut der Cognitive-Load-Theory gibt es drei
+    des Arbeitsgedächtnisses. [LINEBREAK]Laut der Cognitive-Load-Theory gibt es drei
     verschiedene Formen der Belastung: Die extrinsische Belastung,
     die Intrinsische-Belastung und die lernbezogene Belastung. Hierbei
     beschreibt die Extrinsische-Belastung äußere Einflüsse, die dem
     effizienten Lernen entgegenwirken. Eine große Rolle spielt die Ablenkung.
     Diese wird zum Beispiel gefördert, wenn ein Text nicht klar strukturiert
     ist, da der Lernende seinen Fokus zuerst auf das ordnen des Textes legen
-    muss, bevor er den Inhalt verarbeiten kann. Ein weiteres Beispiel wäre
+    muss, bevor er den Inhalt verarbeiten kann. [LINEBREAK]Ein weiteres Beispiel wäre
     eine zu detaillierte Erklärung für einen Lernenden mit hohem Vorwissen.
     In diesem Fall würde der Lernende von einer Informationsflut dessen,
     was er bereits gelernt hat, abgelenkt werden. Die Intrinsische-Belastung
@@ -963,7 +987,7 @@ text = """Im Folgenden möchte ich euch das Modell
     Kombination von hoher intrinsischer und niedriger Extrinsische-Belastung
     zustande.  Demnach beschreibt die Cognitive-Load-Theory die Belastung,
     der das menschliche Gehirn, besonders das Arbeitsgedächtnis, ausgesetzt.
-    Das Spiel läuft. Das Fußballspiel macht heute Spaß."""
+    Das Spiel läuft. Das Fußballspiel macht heute Spaß. [LINEBREAK]"""
 
 text2 = """Die Cognitive-Load-Theory geht davon aus, dass der Speicher des
     Arbeitsgedächtnisses, welches Informationen verarbeitet, begrenzt ist.
@@ -976,7 +1000,7 @@ text2 = """Die Cognitive-Load-Theory geht davon aus, dass der Speicher des
     Lärm, keine konzentrierte Arbeitsatmosphäre oder Ablenkung anderer Art.
     Dieser kann vom Lehrenden beeinflusst werden. Der Lehrende sollte darauf
     achten, diese Belastung so gering wie möglich zu halten, um dem zu
-    Lehrenden ein besseres Lernen zu ermöglichen.  Der Intrinsic-Load
+    Lehrenden ein besseres Lernen zu ermöglichen. [LINEBREAK] Der Intrinsic-Load
     bezeichnet die Belastung, die zum Verstehen eines Themas auf den
     Schüler einwirkt. Sie ist stark abhängig vom Vorwissen des Schülers.
     Hat ein Schüler also hohes Vorwissen zu einem Thema, welches er
@@ -1031,9 +1055,8 @@ text9 = """Es belastet mich, dass Michael mit jemand anderem schläfst.
 text10 = """Mit der Belastung kann ich nicht leben. Es belastet mich, dass Franz fremd gegangen ist.
     Ich schlafe im Garten. Der Schlaf tat an diesem Tag gut."""
 
-text11 = """Lisbeth möchte in das Kino. Im Kino gibt es Popcorn."""
+text11 = """Lisbeth möchte in das Kino. [LINEBREAK]Im Kino gibt es Popcorn."""
 
 text13 = "Ein Bier ist kein Wein. Schule ist doof."
 
-print(analyzeTextCohesion(text7))
-
+print(analyzeTextCohesion(text2))
