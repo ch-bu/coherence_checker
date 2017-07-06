@@ -569,6 +569,8 @@ def generateHTML(paragraph_split, word_lemma_mapping, word_cluster_index):
     """Generates the html for the editor
     """
 
+    html_string = '';
+
     for paragraph in paragraph_split:
         #######################################
         # Render text for integrated group
@@ -581,7 +583,7 @@ def generateHTML(paragraph_split, word_lemma_mapping, word_cluster_index):
         words_split_per_sentence = [sentence.split() for sentence in tokenized_sentences]
 
         # Prepare html string
-        html_string = '<p>'
+        paragraph_string = '<p>'
 
         # Loop over every sentence
         for index, sentence in enumerate(words_split_per_sentence):
@@ -620,16 +622,16 @@ def generateHTML(paragraph_split, word_lemma_mapping, word_cluster_index):
                     cluster_current.append(cluster_of_word)
 
                     # Append html string with span tag and according class
-                    html_string += '<span class="cluster-' + str(cluster_of_word) + '">' + word + '</span>'
+                    paragraph_string += '<span class="cluster-' + str(cluster_of_word) + '">' + word + '</span>'
 
                 # The word does not occur in the word lemma dicitonary
                 # It should not be assigned a class for highlighting
                 except KeyError:
-                    html_string += '<span>' + word + '</span>'
+                    paragraph_string += '<span>' + word + '</span>'
 
                 # Append carrier if it exists
-                html_string += carrier if carrier else ''
-                html_string += ' '
+                paragraph_string += carrier if carrier else ''
+                paragraph_string += ' '
 
             ############################################################
             # Check if cluster changes for next sentence
@@ -655,9 +657,9 @@ def generateHTML(paragraph_split, word_lemma_mapping, word_cluster_index):
 
             # If we only have one sentence append only the end of line character
             if len(tokenized_sentences) <= 1:
-                html_string = html_string[:-1]
-                html_string += end_of_line_character
-                html_string += ' '
+                paragraph_string = paragraph_string[:-1]
+                paragraph_string += end_of_line_character
+                paragraph_string += ' '
             # We have more than one sentence
             else:
                 # See if cluster of adjacent sentence differ
@@ -666,15 +668,17 @@ def generateHTML(paragraph_split, word_lemma_mapping, word_cluster_index):
                 # Append end of line character and add an empty space.
                 # The empty space is necessary otherwise the next sentence
                 # will directly align to the current sentence
-                html_string = html_string[:-1]
-                html_string += end_of_line_character
-                html_string += '&#8660; ' if cluster_changed else ''
-                html_string += ' '
+                paragraph_string = paragraph_string[:-1]
+                paragraph_string += end_of_line_character
+                paragraph_string += '&#8660; ' if cluster_changed else ''
+                paragraph_string += ' '
 
         # End paragraph
-        html_string += '</p>'
+        paragraph_string += '</p>'
 
-        print(html_string)
+        html_string += paragraph_string
+
+    return html_string
 
 
 def analyzeTextCohesion(text):
