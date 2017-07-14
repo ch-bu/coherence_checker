@@ -680,6 +680,10 @@ def generateHTML(paragraph_split, word_lemma_mapping, word_cluster_index):
 
     return html_string
 
+def calculateNumberOfPureLexicalOverlaps(sentences):
+    """Calculates the number of pure lexical overlaps"""
+
+    return 0
 
 def analyzeTextCohesion(text):
     """Analyzed the cohesion of a txt.
@@ -794,12 +798,26 @@ def analyzeTextCohesion(text):
     # Init word pairs array
     word_pairs = []
 
+    # Number of pure lexical overlaps
+    pure_lexical_overlaps = 0
+
     # Build lexical overlap word pairs
     for val, sentence in enumerate(sentences):
         # Get all nouns
         nouns = [word['lemma'] for word in sentence if word['noun']]
         nouns_full = [word for word in sentence if word['noun']]
         nominatives = filter(lambda x: x['nominative'], sentence)
+
+        # Do not analyze last sentence
+        if val != (len(sentences) - 1):
+            # Get nouns of current and next sentence
+            nouns_current_sentence = nouns
+            nouns_next_sentence = [word['lemma'] for word in sentences[val + 1] if word['noun']]
+
+            # If both sentences share an element add it to pure lexical
+            # overlaps
+            if bool(set(nouns_current_sentence) & set(nouns_next_sentence)):
+                pure_lexical_overlaps += 1
 
         # There is only one noun in the current sentence
         if len(nouns) == 1:
@@ -960,6 +978,7 @@ def analyzeTextCohesion(text):
             'lemmaWordRelations': word_lemma_mapping['lemma_word'],
             'wordLemmaRelations': word_lemma_mapping['word_lemma'],
             'numCompounds': len(compounds),
+            'numPureLexicalOverlaps': pure_lexical_overlaps,
             'numCoreferences': len(coreferences),
             'numStemRelations': len(stem_relations),
             'numHypoHyper': len(hyponym_hyper_pairs),
@@ -1061,6 +1080,6 @@ text10 = """Mit der Belastung kann ich nicht leben. Es belastet mich, dass Franz
 
 text11 = """Lisbeth möchte in das Kino. [LINEBREAK]Im Kino gibt es Popcorn."""
 
-text13 = "Ein Bier ist kein Wein. Schule ist doof."
+text13 = "Ein Bier ist kein Wein. Schule sind Biere."
 
-print(analyzeTextCohesion(text2))
+print(analyzeTextCohesion(text))
