@@ -6,8 +6,10 @@ from nltk.corpus import wordnet
 from nltk.tokenize import sent_tokenize
 from itertools import combinations
 import re
+import spacy
 
-
+# https://stackoverflow.com/questions/39763091/how-to-extract-subjects-in-a-sentence-and-their-respective-dependent-phrases
+# https://github.com/krzysiekfonal/textpipeliner
 class CohesionAnalyzerEnglish:
 
     def __init__(self, text):
