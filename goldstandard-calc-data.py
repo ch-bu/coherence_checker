@@ -3,6 +3,7 @@
 from pandas import DataFrame
 from analyzer import get_clusters
 import csv
+import json
 
 def rewrite_text_rating(text):
     """
@@ -23,6 +24,34 @@ def rewrite_text_rating(text):
 
     return output
 
+def get_links(text):
+    # Init return variable
+    output = []
+
+    # Loop over every row in dataset
+    for index, row in text[1].iterrows():
+
+        pair = {'device': row['device'],
+                'source': row['source'],
+                'target': row['target']}
+        output.append(pair)
+
+    return output
+
+def get_nodes(text):
+    """Returns all nodes in the
+    graph"""
+
+
+    source = set(text[1]['source'])
+    target = set(text[1]['target'])
+
+    union = list(source.union(target))
+
+
+    nodes = [{'id': ind, 'word': word} for ind, word in enumerate(union)]
+
+    return nodes
 
 def get_number_of_relations(text):
     """
@@ -109,50 +138,88 @@ def local_cohesion_analysis(text):
             'number_sentences': num_sentences}
 
 
-# Path to rating file
-path = '/home/christian/Repositories/goldstandardstudy-ss17/data/ricarda-100.csv'
+# # Path to rating file
+# path = '/home/christian/Repositories/goldstandardstudy-ss17/data/rater-data/ricarda-100.csv'
+
+# # # Read data from csv
+# # rating = DataFrame.from_csv(path, sep=',', index_col=False,
+# #     encoding='utf-8')
+
+# # # Group text by text id
+# # # We want to analyze every text on it's own
+# texts = rating.groupby(['id'])
+
+# # Write data to disk
+# # DataFrame.to_csv(rating)
+# import csv
+
+# # Write summary statistics for each text
+# with open('/home/christian/Repositories/goldstandardstudy-ss17/data/ricarda-100-analyzed.csv', 'wb') as csvfile:
+#     spamwriter = csv.writer(csvfile, delimiter=';',
+#                             quotechar='|', quoting=csv.QUOTE_MINIMAL)
+#     spamwriter.writerow(['id', 'number_clusters',
+#                          'number_relations', 'number_concepts',
+#                          'local_cohesion', 'number_sentences'])
+
+#     for text in texts:
+#         # Get word pairs
+#         rating_nested = rewrite_text_rating(text)
+
+#         # Get dependent variables
+#         number_of_clusters = len(get_clusters(rating_nested, [1, 2, 3]))
+#         number_of_relations = get_number_of_relations(rating_nested)
+#         number_of_concepts = set([pair['source']['lemma']
+#                     for pair in rating_nested]).union([pair['target']['lemma']
+#                     for pair in rating_nested])
+
+#         local_cohesion = local_cohesion_analysis(rating_nested)
+
+#         print('############ %s #############' % text[0])
+#         print('Number of clusters: %s' % number_of_clusters)
+#         print('Number of relations: %s' % number_of_relations)
+#         print('Number of concepts: %s' % len(number_of_concepts))
+#         print('Local cohesion: %s' % local_cohesion['local_cohesion'])
+#         print('Number of sentences: %s' % local_cohesion['number_sentences'])
+
+#         spamwriter.writerow([text[0], number_of_clusters,
+#                              number_of_relations, len(number_of_concepts),
+#                              local_cohesion['local_cohesion'],
+#                              local_cohesion['number_sentences']])
+
+
+data = {'ricarda': {'texts': {}},
+        'christina': {'texts': {}}}
+
+# Create JSON for data visualization
+# with open('/home/christian/Repositories/goldstandardstudy-ss17/data/ricarda-100-analyzed.csv', 'wb') as csvfile:
+path_ricarda =   '/home/christian/Repositories/goldstandardstudy-ss17/data/rater-data/ricarda-100.csv'
+path_christina = '/home/christian/Repositories/goldstandardstudy-ss17/data/rater-data/christina-100.csv'
 
 # Read data from csv
-rating = DataFrame.from_csv(path, sep=',', index_col=False,
-    encoding='utf-8')
+ricarda   = DataFrame.from_csv(path_ricarda,   sep=',', index_col=False, encoding='utf-8')
+christina = DataFrame.from_csv(path_christina, sep=',', index_col=False, encoding='utf-8')
 
+# print(christina)
 # Group text by text id
 # We want to analyze every text on it's own
-texts = rating.groupby(['id'])
+textsRicarda = ricarda.groupby(['id'])
+# print(textsRicarda)
+textsChristina = christina.groupby(['id'])
 
-# Write data to disk
-# DataFrame.to_csv(rating)
-import csv
+# print(christina['id'])
 
 
-with open('/home/christian/Repositories/goldstandardstudy-ss17/data/ricarda-100-analyzed.csv', 'wb') as csvfile:
-    spamwriter = csv.writer(csvfile, delimiter=';',
-                            quotechar='|', quoting=csv.QUOTE_MINIMAL)
-    spamwriter.writerow(['id', 'number_clusters',
-                         'number_relations', 'number_concepts',
-                         'local_cohesion', 'number_sentences'])
+for text in textsRicarda:
+    # print(text)
+    data['ricarda']['texts'][text[0]] = {'links': get_links(text),
+                                         'nodes': get_nodes(text)}
 
-    for text in texts:
-        # Get word pairs
-        rating_nested = rewrite_text_rating(text)
+for text in textsChristina:
+    data['christina']['texts'][text[0]] = {'links': get_links(text),
+                                          'nodes': get_nodes(text)}
 
-        # Get dependent variables
-        number_of_clusters = len(get_clusters(rating_nested, [1, 2, 3]))
-        number_of_relations = get_number_of_relations(rating_nested)
-        number_of_concepts = set([pair['source']['lemma']
-                    for pair in rating_nested]).union([pair['target']['lemma']
-                    for pair in rating_nested])
+path = '/home/christian/Repositories/d3-builder/app/data/cohvis2.json'
 
-        local_cohesion = local_cohesion_analysis(rating_nested)
 
-        print('############ %s #############' % text[0])
-        print('Number of clusters: %s' % number_of_clusters)
-        print('Number of relations: %s' % number_of_relations)
-        print('Number of concepts: %s' % len(number_of_concepts))
-        print('Local cohesion: %s' % local_cohesion['local_cohesion'])
-        print('Number of sentences: %s' % local_cohesion['number_sentences'])
-
-        spamwriter.writerow([text[0], number_of_clusters,
-                             number_of_relations, len(number_of_concepts),
-                             local_cohesion['local_cohesion'],
-                             local_cohesion['number_sentences']])
+with open(path, 'w') as fp:
+    json.dump(data, fp)
