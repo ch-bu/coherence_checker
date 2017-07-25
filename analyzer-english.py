@@ -59,15 +59,26 @@ class CohesionAnalyzerEnglish:
                     self.word_pairs.append({'source': comb[0].lemma_, 'target': comb[1].lemma_})
 
 
-            print self.word_pairs
+            # print self.word_pairs
 
 
 
     def generate_word_pairs(self):
 
-        # word_pairs = []
+        # Get sentence boundaries
+        sents_boundaries = [(sent.start, sent.end) for sent in self.sents]
 
+        # print(sents_boundaries)
+        # print(self.sents)
+        merge0 = self.text[sents_boundaries[0][0]:sents_boundaries[0][1]].merge(tag = "NNP")
+        merge1 = self.text[sents_boundaries[1][0]:sents_boundaries[1][1]].merge(tag = "NNP")
+        merge2 = self.text[sents_boundaries[2][0]:sents_boundaries[2][1]].merge(tag = "NNP")
+
+        print(merge1.lemma_)
         self._generate_nouns()
+
+
+            # print sent.start
 
         # Get word pairs from nouns
         # for sentence in self.text.sents:
@@ -103,8 +114,8 @@ class CohesionAnalyzerEnglish:
 
 
 model = CohesionAnalyzerEnglish(u"""
-    ohn Grisham graduated from Mississippi State University before attending the University of Mississippi School of Law in 1981. He practiced criminal law for about a decade and served in the House of Representatives in Mississippi from January 1984 to September 1990.[4]
-His first novel, A Time to Kill, was published in June 1989, four years after he began writing it. As of 2012, his books have sold over 275 million copies worldwide.[5] A Galaxy British Book Awards winner, Grisham is one of only three authors to sell 2 million copies on a first printing.""")
+    John Grisham graduated from Mississippi State University before attending the University of Mississippi School of Law in 1981. He practiced criminal law for about a decade and served in the House of Representatives in Mississippi from January 1984 to September 1990.
+His first novel, A Time to Kill, was published in June 1989, four years after he began writing it. As of 2012, his books have sold over 275 million copies worldwide. A Galaxy British Book Awards winner, Grisham is one of only three authors to sell 2 million copies on a first printing.""")
 
 # model2 = CohesionAnalyzerEnglish(u'Credit and mortgage account holders must submit their requests within 30 days')
 
