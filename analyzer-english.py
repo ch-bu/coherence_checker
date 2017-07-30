@@ -1,20 +1,27 @@
 # encoding: utf-8
 
-import nltk
-from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet as wn
-from nltk.tokenize import sent_tokenize
 from itertools import combinations
 import re
 import spacy
+from langdetect import detect
 
 # https://stackoverflow.com/questions/39763091/how-to-extract-subjects-in-a-sentence-and-their-respective-dependent-phrases
 # https://github.com/krzysiekfonal/textpipeliner
 class CohesionAnalyzerEnglish:
 
     def __init__(self, text):
-        # Load spacy
-        self.nlp = spacy.load('en')
+        # Get language of text
+        language = detect(text.decode('utf-8'))
+
+        # English text
+        if language == 'en':
+            # Load spacy
+            self.nlp = spacy.load('en')
+        # German text
+        elif language == 'de':
+            # Load spacy
+            self.nlp = spacy.load('de')
 
         # Prepare text and remove unwanted characters
         self.text = self.nlp(text.decode('utf-8'))
@@ -24,6 +31,10 @@ class CohesionAnalyzerEnglish:
 
         # Word pairs
         self.word_pairs = self._generate_nouns() + self._generate_hyponyms_hyperonyms()
+
+        # All concepts
+        self.concepts = list(set([pair['source'] for pair in self.word_pairs] + \
+                       [pair['target'] for pair in self.word_pairs]))
 
     def _generate_nouns(self):
         """Filter all nouns from sentences and
@@ -218,21 +229,45 @@ class CohesionAnalyzerEnglish:
         return clusters
 
 
+    def _get_word_cluster_index(self, cluster):
+        """Generate a dictionary that
+        has the words as key and the cluster number
+        as value"""
+
+        # When clusters are calculated assign them to the word_pairs as
+        # an additional value
+        word_cluster_index = {}
+
+        # Loop over every cluster
+        for index, single_cluster in enumerate(cluster):
+            # Get words for current cluster
+            source_words = map(lambda x: x['source'], single_cluster)
+            target_words = map(lambda x: x['target'], single_cluster)
+
+            # Concatenate sources and targets in to one array
+            words = source_words + target_words
+
+            # Assign index to word_cluster_index dict
+            for word in words:
+                word_cluster_index[word] = index
+
+        return word_cluster_index
+
+
     def get_data_for_visualization(self):
         """Get all data for get_data for visualization"""
 
-        # Get number of concepts
-        num_concepts = len(list(set([pair['source'] for pair in self.word_pairs] + \
-                       [pair['target'] for pair in self.word_pairs])))
+        cluster = self._get_clusters()
 
-        clusters = self._get_clusters()
+        word_cluster_index = self._get_word_cluster_index(cluster)
+
 
         return {'links': self.word_pairs,
                 'numRelations': self._calculate_number_relations(),
                 'numSentences': len(self.sents),
-                'numConcepts': num_concepts,
-                'clusters': clusters,
-                'numCluster': len(clusters)}
+                'numConcepts': len(self.concepts),
+                'clusters': cluster,
+                'numCluster': len(cluster)}
 
 
 model = CohesionAnalyzerEnglish("""
@@ -243,10 +278,11 @@ model = CohesionAnalyzerEnglish("""
     A Galaxy British Book Awards winner, Grisham is one of only three authors to sell 2 million copies on a first printing.
     Michael went into the pool.""")
 
-# model2 = CohesionAnalyzerEnglish(u'Credit and mortgage account holders must submit their requests within 30 days')
+# text3 = """Das Wissen zeichnet einen Menschen aus. Sprachkenntnis zum
+#     Beispiel ist wichtig, da Menschen sonst nicht Sprechen koennen. Der Bezug
+#     zur Realitt ermglicht dies. Vor allem der Praxisbezug ist dabei wichtig.
+#     """
 
 print(model.get_data_for_visualization())
+# print(model2.get_data_for_visualization())
 
-# from nltk.stem import WordNetLemmatizer
-# wordnet_lemmatizer = WordNetLemmatizer()
-# print(wordnet_lemmatizer.lemmatize("theories"))
