@@ -17,7 +17,7 @@ class CohesionAnalyzerEnglish:
         self.nlp = spacy.load('en')
 
         # Prepare text and remove unwanted characters
-        self.text = self.nlp(text)
+        self.text = self.nlp(text.decode('utf-8'))
 
         # Extract sentences
         self.sents = [sent for sent in self.text.sents]
@@ -235,7 +235,7 @@ class CohesionAnalyzerEnglish:
                 'numCluster': len(clusters)}
 
 
-model = CohesionAnalyzerEnglish(u"""
+model = CohesionAnalyzerEnglish("""
     John Grisham graduated from Mississippi State University before attending the University of Mississippi School of Law in 1981.
     He practiced criminal law for about a decade and served in the House of Representatives in Mississippi from January 1984 to September 1990.
     His first novel, A Time to Kill, was published in June 1989, four years after he began writing it.
