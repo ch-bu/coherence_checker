@@ -22,9 +22,8 @@ class CohesionAnalyzerEnglish:
         # Extract sentences
         self.sents = [sent for sent in self.text.sents]
 
-        # Init empty word pairs
-        # self.word_pairs = []
-
+        # Word pairs
+        self.word_pairs = self._generate_nouns() + self._generate_hyponyms_hyperonyms()
 
     def _generate_nouns(self):
         """Filter all nouns from sentences and
@@ -109,68 +108,31 @@ class CohesionAnalyzerEnglish:
 
         return word_pairs
 
-    def generate_word_pairs(self):
 
-        # Get word pairs
-        # print self._generate_nouns
-        # print self._generate_hyponyms_hyperonyms
-        word_pairs = self._generate_hyponyms_hyperonyms() + \
-                     self._generate_nouns()
+    def _calculate_number_relations(self):
+        """Calculates the number of relations"""
 
-        print word_pairs
+        # Make tuples from word_pairs
+        tuples = map(lambda x: (x['source'], x['target']), self.word_pairs)
 
-        # Get sentence boundaries
-        # sents_boundaries = [(sent.start, sent.end) for sent in self.sents]
+        # Remove duplicates
+        tuples = list(set([(pair[0], pair[1])
+            for pair in tuples if pair[0] != pair[1]]))
 
-        # print(sents_boundaries)
-        # print(self.sents)
-        # merge0 = self.text[sents_boundaries[0][0]:sents_boundaries[0][1]].merge(tag = "NNP")
-        # merge1 = self.text[sents_boundaries[1][0]:sents_boundaries[1][1]].merge(tag = "NNP")
-        # merge2 = self.text[sents_boundaries[2][0]:sents_boundaries[2][1]].merge(tag = "NNP")
-
-        # police, and_, policeman = self.nlp(u'Police and policeman')
-        # print(apples.vector)
-        # print(police.similarity(policeman))
-        # print(merge1.lemma_)
-        # self._generate_nouns()
-        #
-        # )
+        return len(tuples)
 
 
+    def get_data_for_visualization(self):
+        """Get all data for get_data for visualization"""
 
-            # print sent.start
+        # Get number of concepts
+        num_concepts = len(list(set([pair['source'] for pair in self.word_pairs] + \
+                       [pair['target'] for pair in self.word_pairs])))
 
-        # Get word pairs from nouns
-        # for sentence in self.text.sents:
-            # for index, word in enumerate(sentence):
-            #     if index < len(sentence) - 1:
-            #         print '%s and %s: %f' % (word, sentence[index + 1], word.similarity(sentence[index + 1]))
-
-        # for index, sentence in enumerate(self.text.sents):
-        #     if index < len(self.text.sents) - 1:
-        #         print '%s and %s: %f' % (sentence, self.text.sents[index + 1], sentence.similarity(self.text.sents[index + 1]))
-
-        # print '%s and %s: %f' % (self.text.sents[0], self.text.sents[1], sentence.similarity(self.text.sents[1]))
-            # print sentence
-                    # print(word.similarity(sentence[index + 1]))
-                    # print(sentence[index + 1])
-                # for w in word.subtree:
-                    # print w
-                    # print "\n"
-                # print '%s, %s, %s: %s' % (word.dep_, word.pos_, word.tag_, word.lemma_)
-
-
-            # print(sentence.lemma_)
-            # for ent in sentence.:
-            #     print(ent.label_, ent.text)
-            # print(sentence)
-            # pairs_current_sentence = list(combinations(sentence, 2))
-            # # print(pairs_current_sentence)
-            # for pair in pairs_current_sentence:
-            #     word_pairs.append({'source': pair[0][1], 'target': pair[1][1]})
-
-        # return word_pairs
-
+        return {'links': self.word_pairs,
+                'numRelations': self._calculate_number_relations(),
+                'numSentences': len(self.sents),
+                'numConcepts': num_concepts}
 
 
 model = CohesionAnalyzerEnglish(u"""
@@ -182,7 +144,7 @@ model = CohesionAnalyzerEnglish(u"""
 
 # model2 = CohesionAnalyzerEnglish(u'Credit and mortgage account holders must submit their requests within 30 days')
 
-print(model.generate_word_pairs())
+print(model.get_data_for_visualization())
 
 # from nltk.stem import WordNetLemmatizer
 # wordnet_lemmatizer = WordNetLemmatizer()
