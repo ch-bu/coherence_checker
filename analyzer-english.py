@@ -122,6 +122,102 @@ class CohesionAnalyzerEnglish:
         return len(tuples)
 
 
+    def _get_clusters(self):
+        """Calculates the number of computed
+        clusters"""
+
+        # If we only have one sentence return word pairs
+        # as single cluster
+        if len(self.sents) == 1:
+            return self.word_pairs
+
+        # Initialize clusters. The cluster
+        # later stores all clusters as a list containing
+        # the word pair dictionaries
+        clusters = []
+
+        # Store all words that have already been
+        # assigned to a cluster
+        assigned_words = []
+
+        # Loop over every word pair
+        for num in range(0, len(self.word_pairs)):
+            # Store all words that are stored in the current cluster
+            current_word_pair = [self.word_pairs[num]['source'],
+                    self.word_pairs[num]['target']]
+
+            # Only assign a new cluster if the current word pair has
+            # not already been processed
+            if (not bool(set(current_word_pair) & set(assigned_words))):
+                # Init current cluster
+                current_cluster = [self.word_pairs[num]]
+
+                # Remember that we already added the words of the current cluster
+                assigned_words.append(current_word_pair[0])
+                assigned_words.append(current_word_pair[1])
+
+                # Index of word_pair we already added to current cluster.
+                # We store the index to reduce the computation. If we already
+                # added an index to the current cluster, there is no need
+                # to look at it again
+                index_pairs_added = [num]
+
+                # Found set to true for while loop
+                found = True
+
+                # As long as we still find connections keep on looping
+                while found:
+                    # Found set to false
+                    found = False
+
+                    # Loop over every word pair again
+                    for num_again in range(0, len(self.word_pairs)):
+                        # Word pairs do not match
+                        if num_again not in index_pairs_added:
+                            # Store both words of current pair in list
+                            iter_word_pair = [self.word_pairs[num_again]['source'],
+                                    self. word_pairs[num_again]['target']]
+
+                            # Lemmas in current cluster
+                            current_cluster_lemma_source = map(lambda x: x['source'], current_cluster)
+                            current_cluster_lemma_target = map(lambda x: x['target'], current_cluster)
+
+                            # Get all words in current cluster
+                            current_cluster_lemma = current_cluster_lemma_source + \
+                                        current_cluster_lemma_target
+
+                            # Both pairs share an element
+                            shared_element = bool(set(current_cluster_lemma) & set(iter_word_pair))
+
+                            # If they share an element append to current cluster
+                            if shared_element:
+                                # Append pair to current cluster
+                                current_cluster.append(self.word_pairs[num_again])
+
+                                # Remember that we already appended this
+                                # pair to the current cluster
+                                index_pairs_added.append(num_again)
+
+                                # Add word pair that belongs to current cluster
+                                # to list of assigned word pairs. By doing this
+                                # we know if a word has already been assigned
+                                # to a cluster.
+                                assigned_words.append(iter_word_pair[0])
+                                assigned_words.append(iter_word_pair[1])
+
+                                # We found a candidate. When we found a connection
+                                # a new word might be added to the current
+                                # cluster. Therefore we have too loop over
+                                # every word pair again to see if we
+                                # missed a connection with the new word
+                                found = True
+
+                # Append current cluster to all clusters
+                clusters.append(current_cluster)
+
+        return clusters
+
+
     def get_data_for_visualization(self):
         """Get all data for get_data for visualization"""
 
@@ -129,10 +225,14 @@ class CohesionAnalyzerEnglish:
         num_concepts = len(list(set([pair['source'] for pair in self.word_pairs] + \
                        [pair['target'] for pair in self.word_pairs])))
 
+        clusters = self._get_clusters()
+
         return {'links': self.word_pairs,
                 'numRelations': self._calculate_number_relations(),
                 'numSentences': len(self.sents),
-                'numConcepts': num_concepts}
+                'numConcepts': num_concepts,
+                'clusters': clusters,
+                'numCluster': len(clusters)}
 
 
 model = CohesionAnalyzerEnglish(u"""
@@ -140,7 +240,8 @@ model = CohesionAnalyzerEnglish(u"""
     He practiced criminal law for about a decade and served in the House of Representatives in Mississippi from January 1984 to September 1990.
     His first novel, A Time to Kill, was published in June 1989, four years after he began writing it.
     As of 2012, his books and novellas have sold over 275 million copies worldwide.
-    A Galaxy British Book Awards winner, Grisham is one of only three authors to sell 2 million copies on a first printing.""")
+    A Galaxy British Book Awards winner, Grisham is one of only three authors to sell 2 million copies on a first printing.
+    Michael went into the pool.""")
 
 # model2 = CohesionAnalyzerEnglish(u'Credit and mortgage account holders must submit their requests within 30 days')
 
