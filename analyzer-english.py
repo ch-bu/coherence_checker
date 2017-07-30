@@ -2,7 +2,7 @@
 
 import nltk
 from nltk.stem import WordNetLemmatizer
-from nltk.corpus import wordnet
+from nltk.corpus import wordnet as wn
 from nltk.tokenize import sent_tokenize
 from itertools import combinations
 import re
@@ -20,15 +20,17 @@ class CohesionAnalyzerEnglish:
         self.text = self.nlp(text)
 
         # Extract sentences
-        self.sents = self.text.sents
+        self.sents = [sent for sent in self.text.sents]
 
         # Init empty word pairs
-        self.word_pairs = []
+        # self.word_pairs = []
 
 
     def _generate_nouns(self):
         """Filter all nouns from sentences and
         return list of sentences with nouns"""
+
+        word_pairs = []
 
         for sentence in self.sents:
 
@@ -48,7 +50,7 @@ class CohesionAnalyzerEnglish:
                     # Subject should not be the noun
                     if noun.lemma_ != subject.lemma_:
                         # Append word pair
-                        self.word_pairs.append({'source': subject.lemma_, 'target': noun.lemma_})
+                        word_pairs.append({'source': subject.lemma_, 'target': noun.lemma_})
             # There is no subject in the sentence
             else:
                 # Generate all combinations
@@ -56,26 +58,84 @@ class CohesionAnalyzerEnglish:
 
                 # Loop over every combination
                 for comb in combs:
-                    self.word_pairs.append({'source': comb[0].lemma_, 'target': comb[1].lemma_})
+                    word_pairs.append({'source': comb[0].lemma_, 'target': comb[1].lemma_})
+
+        return word_pairs
 
 
-            # print self.word_pairs
+    def _generate_hyponyms_hyperonyms(self):
+        """Generates a word pair list of hyperonyms and
+        hyponyms from a given dataset"""
 
+        word_pairs = []
 
+        # Loop over every sentence
+        for index, sentence in enumerate(self.sents):
+            # Do not loop over last sentence
+            if index < (len(self.sents) - 1):
+
+                # Get all nouns from current and next sentence
+                nouns_current_sentence = [noun.lemma_ for noun in sentence if any(noun.pos_ in s for s in ['PROPN', 'NOUN'])]
+                nouns_next_sentence = [noun.lemma_ for noun in self.sents[index + 1] if any(noun.pos_ in s for s in ['PROPN', 'NOUN'])]
+
+                # Loop over every noun in current sentence
+                for noun in nouns_current_sentence:
+                    ###############################
+                    # Get hypernyms and hyponyms
+                    ###############################
+                    # Get all synsets of current noun
+                    synsets_current_noun = [synset for synset in wn.synsets(noun)]
+
+                    # Get all hyponyms and hyperonyms from all synsets
+                    hyponyms_current_noun = [synset.hyponyms() for synset in synsets_current_noun]
+                    hypernyms_current_noun = [synset.hypernyms() for synset in synsets_current_noun]
+
+                    # Get all synsets of hyperonyms and hypernyms
+                    synsets = [synset for synsets in (hyponyms_current_noun + hypernyms_current_noun) for synset in synsets]
+
+                    # Get all lemmas
+                    hypernyms_hyponyms = ([lemma.name().replace('_', ' ') for synset in synsets for lemma in synset.lemmas()])
+
+                    ################################
+                    # Connect to next sentence
+                    ################################
+                    # sentences_share_element = bool(set(hypernyms_hyponyms) & set(nouns_next_sentence))
+                    sentences_shared_elements = list(set(hypernyms_hyponyms).intersection(nouns_next_sentence))
+
+                    if len(sentences_shared_elements) > 0:
+                        # print(sentences_share_element)
+                        for shared_element in sentences_shared_elements:
+                            word_pairs.append({'source': noun, 'target': shared_element})
+
+        return word_pairs
 
     def generate_word_pairs(self):
 
+        # Get word pairs
+        # print self._generate_nouns
+        # print self._generate_hyponyms_hyperonyms
+        word_pairs = self._generate_hyponyms_hyperonyms() + \
+                     self._generate_nouns()
+
+        print word_pairs
+
         # Get sentence boundaries
-        sents_boundaries = [(sent.start, sent.end) for sent in self.sents]
+        # sents_boundaries = [(sent.start, sent.end) for sent in self.sents]
 
         # print(sents_boundaries)
         # print(self.sents)
-        merge0 = self.text[sents_boundaries[0][0]:sents_boundaries[0][1]].merge(tag = "NNP")
-        merge1 = self.text[sents_boundaries[1][0]:sents_boundaries[1][1]].merge(tag = "NNP")
-        merge2 = self.text[sents_boundaries[2][0]:sents_boundaries[2][1]].merge(tag = "NNP")
+        # merge0 = self.text[sents_boundaries[0][0]:sents_boundaries[0][1]].merge(tag = "NNP")
+        # merge1 = self.text[sents_boundaries[1][0]:sents_boundaries[1][1]].merge(tag = "NNP")
+        # merge2 = self.text[sents_boundaries[2][0]:sents_boundaries[2][1]].merge(tag = "NNP")
 
-        print(merge1.lemma_)
-        self._generate_nouns()
+        # police, and_, policeman = self.nlp(u'Police and policeman')
+        # print(apples.vector)
+        # print(police.similarity(policeman))
+        # print(merge1.lemma_)
+        # self._generate_nouns()
+        #
+        # )
+
 
 
             # print sent.start
@@ -114,8 +174,11 @@ class CohesionAnalyzerEnglish:
 
 
 model = CohesionAnalyzerEnglish(u"""
-    John Grisham graduated from Mississippi State University before attending the University of Mississippi School of Law in 1981. He practiced criminal law for about a decade and served in the House of Representatives in Mississippi from January 1984 to September 1990.
-His first novel, A Time to Kill, was published in June 1989, four years after he began writing it. As of 2012, his books have sold over 275 million copies worldwide. A Galaxy British Book Awards winner, Grisham is one of only three authors to sell 2 million copies on a first printing.""")
+    John Grisham graduated from Mississippi State University before attending the University of Mississippi School of Law in 1981.
+    He practiced criminal law for about a decade and served in the House of Representatives in Mississippi from January 1984 to September 1990.
+    His first novel, A Time to Kill, was published in June 1989, four years after he began writing it.
+    As of 2012, his books and novellas have sold over 275 million copies worldwide.
+    A Galaxy British Book Awards winner, Grisham is one of only three authors to sell 2 million copies on a first printing.""")
 
 # model2 = CohesionAnalyzerEnglish(u'Credit and mortgage account holders must submit their requests within 30 days')
 
