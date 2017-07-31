@@ -1,7 +1,7 @@
 # encoding: utf-8
 
 from nltk.corpus import wordnet as wn
-from itertools import combinations
+from itertools import combinations, chain
 import re
 import spacy
 from langdetect import detect
@@ -257,12 +257,20 @@ class CohesionAnalyzerEnglish:
     def get_data_for_visualization(self):
         """Get all data for get_data for visualization"""
 
+        # Get clusters
         cluster = self._get_clusters()
 
+        # Create dictionary of words and it's corresponding clusters
         word_cluster_index = self._get_word_cluster_index(cluster)
+
+        # Get unique nodes
+        nodes = map(lambda x: [x['source'], x['target']], self.word_pairs)
+        nodes = list(set(list(chain(*nodes))))
+        nodes = [{'id': word, 'index': ind} for ind, word, in enumerate(nodes)]
 
 
         return {'links': self.word_pairs,
+                'nodes': nodes,
                 'numRelations': self._calculate_number_relations(),
                 'numSentences': len(self.sents),
                 'numConcepts': len(self.concepts),
