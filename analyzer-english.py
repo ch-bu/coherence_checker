@@ -254,6 +254,29 @@ class CohesionAnalyzerEnglish:
         return word_cluster_index
 
 
+    def _get_lemma_word_mapping(self, nodes):
+        """Returns a dictionary with the lemma as key and the
+        inflected words as values"""
+
+        # Init mapping
+        mapping = {}
+
+        # Loop over every word in text
+        for token in self.text:
+            # Word is part of nodes for visualization
+            if token.lemma_ in nodes:
+                # We have already assigned this word to a key
+                if token.lemma_ in mapping:
+                    # Avoid duplicates
+                    if token.orth_ not in mapping[token.lemma_]:
+                        mapping[token.lemma_].append(token.orth_)
+                # This word is knew, let's start a knew key
+                else:
+                    mapping[token.lemma_] = [token.orth_]
+
+        return mapping
+
+
     def get_data_for_visualization(self):
         """Get all data for get_data for visualization"""
 
@@ -265,17 +288,23 @@ class CohesionAnalyzerEnglish:
 
         # Get unique nodes
         nodes = map(lambda x: [x['source'], x['target']], self.word_pairs)
-        nodes = list(set(list(chain(*nodes))))
-        nodes = [{'id': word, 'index': ind} for ind, word, in enumerate(nodes)]
+        nodes_list = list(set(list(chain(*nodes))))
+        nodes_dict = [{'id': word, 'index': ind} for ind, word, in enumerate(nodes_list)]
+
+        # It is important that bo bo
+        lemma_word_mapping = self._get_lemma_word_mapping(nodes_list)
 
 
         return {'links': self.word_pairs,
                 'nodes': nodes,
-                'numRelations': self._calculate_number_relations(),
                 'numSentences': len(self.sents),
-                'numConcepts': len(self.concepts),
+                'numConcepts': len(nodes),
                 'clusters': cluster,
-                'numCluster': len(cluster)}
+                'lemmaWordRelations': lemma_word_mapping,
+                'numRelations': self._calculate_number_relations(),
+                'numCluster': len(cluster),
+                'numSentences': len(self.sents),
+                'numConcepts': len(self.concepts)}
 
 
 model = CohesionAnalyzerEnglish("""
