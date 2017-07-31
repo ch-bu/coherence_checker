@@ -26,6 +26,9 @@ class CohesionAnalyzerEnglish:
         # Prepare text and remove unwanted characters
         self.text = self.nlp(text.decode('utf-8'))
 
+        # Paragraphs
+        self.paragraphs = text.decode('utf-8').split('[LINEBREAK]')
+
         # Extract sentences
         self.sents = [sent for sent in self.text.sents]
 
@@ -296,9 +299,135 @@ class CohesionAnalyzerEnglish:
                 else:
                     mapping[token.orth_] = [token.lemma_]
 
-        print mapping
-
         return mapping
+
+
+    def _get_html_string(self, word_lemma_mapping, word_cluster_index):
+        """Generates an html string with spans for each word in order
+        to signal the mapping between visualization and text
+
+        Args:
+            word_lemma_mapping (dict) - A dict with words as key and lemmas as values
+            word_cluster_index (dict) - Words as key and int of cluster as value
+
+        Returns:
+            String - An html formatted string
+        """
+
+        html_string = '';
+
+        for paragraph in self.paragraphs:
+            #######################################
+            # Render text for integrated group
+            #######################################
+
+            # Split text into sentences
+            tokens = self.nlp(paragraph)
+            tokenized_sentences = [sent for sent in tokens.sents]
+
+            # for sentence in tokenized_sentences:
+            #     print sentence.orth_.split()
+
+            # Split words within sentences
+            words_split_per_sentence = [sentence.orth_.split() for sentence in tokenized_sentences]
+
+            # Prepare html string
+            paragraph_string = '<p>'
+
+            # Loop over every sentence
+            for index, sentence in enumerate(words_split_per_sentence):
+                # Store cluster uf current sentence
+                cluster_current = []
+
+                # Store the end of line character
+                # We need to store the character to append it
+                # afterwards
+                end_of_line_character = sentence[-1][-1]
+
+                # Remove end of line characters
+                words = [re.sub(r'[.\!?]', '', s) for s in sentence]
+
+                # Loop over every word in current sentence
+                for word in words:
+                    # We need to reset the carrier for every word otherwise
+                    # every word will be appended with the carrier
+                    carrier = None
+
+                    # Check if word ends with a special character
+                    if word.endswith(':') or word.endswith(',') or word.endswith(';'):
+                        carrier = word[-1]
+                        word = re.sub(r'[:,;]', '', word)
+
+                    # Check if there is a lemma for current word and catch
+                    # any KeyError
+                    try:
+                        # Get lemma for word
+                        lemma = word_lemma_mapping[word][0]
+
+                        # Get cluster number for word
+                        cluster_of_word = word_cluster_index[lemma]
+
+                        # Push cluster ot current cluster list
+                        cluster_current.append(cluster_of_word)
+
+                        # Append html string with span tag and according class
+                        paragraph_string += '<span class="cluster-' + str(cluster_of_word) + '">' + word + '</span>'
+
+                    # The word does not occur in the word lemma dicitonary
+                    # It should not be assigned a class for highlighting
+                    except KeyError:
+                        paragraph_string += '<span>' + word + '</span>'
+
+                    # Append carrier if it exists
+                    paragraph_string += carrier if carrier else ''
+                    paragraph_string += ' '
+
+                ############################################################
+                # Check if cluster changes for next sentence
+                ############################################################
+                if index != (len(words_split_per_sentence) - 1) \
+                        and len(tokenized_sentences) > 1:
+                    # Get words for next sentence
+                    words_next_sentence = [re.sub(r'[.\!?]', '', s) for s in words_split_per_sentence[index + 1]]
+
+                    # Initialize cluster of next sentence
+                    cluster_next = []
+
+                    for word in words_next_sentence:
+                        # Catch errors
+                        try:
+                            lemma = word_lemma_mapping[word][0]
+
+                            cluster_of_word_next_sentence = word_cluster_index[lemma]
+
+                            cluster_next.append(cluster_of_word_next_sentence)
+                        except KeyError:
+                            pass
+
+                # If we only have one sentence append only the end of line character
+                if len(tokenized_sentences) <= 1:
+                    paragraph_string = paragraph_string[:-1]
+                    paragraph_string += end_of_line_character
+                    paragraph_string += ' '
+                # We have more than one sentence
+                else:
+                    # See if cluster of adjacent sentence differ
+                    cluster_changed = set(cluster_current) != set(cluster_next)
+
+                    # Append end of line character and add an empty space.
+                    # The empty space is necessary otherwise the next sentence
+                    # will directly align to the current sentence
+                    paragraph_string = paragraph_string[:-1]
+                    paragraph_string += end_of_line_character
+                    paragraph_string += '&#8660; ' if cluster_changed else ''
+                    paragraph_string += ' '
+
+            # End paragraph
+            paragraph_string += '</p>'
+
+            html_string += paragraph_string
+
+        return html_string
 
 
     def get_data_for_visualization(self):
@@ -321,6 +450,9 @@ class CohesionAnalyzerEnglish:
         # Generate dict with orth as key and lemma as value
         word_lemma_mapping = self._get_word_lemma_mapping(nodes_list)
 
+        # Generate html string
+        html_string = self._get_html_string(word_lemma_mapping, word_cluster_index)
+
 
         return {'links': self.word_pairs,
                 'nodes': nodes,
@@ -332,13 +464,14 @@ class CohesionAnalyzerEnglish:
                 'numRelations': self._calculate_number_relations(),
                 'numCluster': len(cluster),
                 'numSentences': len(self.sents),
-                'numConcepts': len(self.concepts)}
+                'numConcepts': len(self.concepts),
+                'html_string': html_string}
 
 
 model = CohesionAnalyzerEnglish("""
     John Grisham graduated from Mississippi State University before attending the University of Mississippi School of Law in 1981.
     He practiced criminal law for about a decade and served in the House of Representatives in Mississippi from January 1984 to September 1990.
-    His first novel, A Time to Kill, was published in June 1989, four years after he began writing it.
+    His first novel, A Time to Kill, was published in June 1989, four years after he began writing it. [LINEBREAK]
     As of 2012, his books and novellas have sold over 275 million copies worldwide.
     A Galaxy British Book Awards winner, Grisham is one of only three authors to sell 2 million copies on a first printing.
     Michael went into the pool.""")
