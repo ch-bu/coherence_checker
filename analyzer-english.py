@@ -277,6 +277,30 @@ class CohesionAnalyzerEnglish:
         return mapping
 
 
+    def _get_word_lemma_mapping(self, nodes):
+        """Returns a dictionary with the word as a key
+        and the lemma as a value"""
+
+        mapping = {}
+
+        # Loop over every word in text
+        for token in self.text:
+            # Word ist part of nodes for visualization
+            if token.lemma_ in nodes:
+                # We have already assigned this word to a key
+                if token.orth_ in mapping:
+                    # Avoid duplicates
+                    if token.lemma_ not in mapping[token.orth_]:
+                        mapping[token.orth_].append(token.lemma_)
+                # This word is knew, let's start a knew key
+                else:
+                    mapping[token.orth_] = [token.lemma_]
+
+        print mapping
+
+        return mapping
+
+
     def get_data_for_visualization(self):
         """Get all data for get_data for visualization"""
 
@@ -291,8 +315,11 @@ class CohesionAnalyzerEnglish:
         nodes_list = list(set(list(chain(*nodes))))
         nodes_dict = [{'id': word, 'index': ind} for ind, word, in enumerate(nodes_list)]
 
-        # It is important that bo bo
+        # Generate dict with lemma as key and orth as value
         lemma_word_mapping = self._get_lemma_word_mapping(nodes_list)
+
+        # Generate dict with orth as key and lemma as value
+        word_lemma_mapping = self._get_word_lemma_mapping(nodes_list)
 
 
         return {'links': self.word_pairs,
@@ -301,6 +328,7 @@ class CohesionAnalyzerEnglish:
                 'numConcepts': len(nodes),
                 'clusters': cluster,
                 'lemmaWordRelations': lemma_word_mapping,
+                'wordLemmaRelations': word_lemma_mapping,
                 'numRelations': self._calculate_number_relations(),
                 'numCluster': len(cluster),
                 'numSentences': len(self.sents),
