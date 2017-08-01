@@ -46,32 +46,34 @@ class CohesionAnalyzerEnglish:
         word_pairs = []
 
         for sentence in self.sents:
-
             # Get root from sentence
             root = [w for w in sentence if w.head is w][0]
 
             # Get subject
-            subject = list(root.lefts)[0]
+            try:
+                subject = [child for child in list(root.children) if any(child.dep_ in s for s in ['nsubj', 'nsubjpass'])][0]
+            except IndexError:
+                subject = None
 
             # Extract nouns from sentence
-            nouns = [word for word in sentence if any(word.pos_ in s for s in ["PROPN", "NOUN"])]
+            nouns = [word for word in sentence if any(word.dep_ in s for s in ['PROPN', 'NOUN'])]
 
             # Subject is a noun
-            if any(subject.pos_ in s for s in ["NOUN", "PROPN"]):
+            if subject:
                 # Build word pairs
                 for noun in nouns:
                     # Subject should not be the noun
                     if noun.lemma_ != subject.lemma_:
                         # Append word pair
                         word_pairs.append({'source': subject.lemma_, 'target': noun.lemma_})
-            # There is no subject in the sentence
-            else:
-                # Generate all combinations
-                combs = combinations(nouns, 2)
+            # # There is no subject in the sentence
+            # else:
+            #     # Generate all combinations
+            #     combs = combinations(nouns, 2)
 
-                # Loop over every combination
-                for comb in combs:
-                    word_pairs.append({'source': comb[0].lemma_, 'target': comb[1].lemma_})
+            #     # Loop over every combination
+            #     for comb in combs:
+            #         word_pairs.append({'source': comb[0].lemma_, 'target': comb[1].lemma_})
 
         return word_pairs
 
@@ -468,12 +470,22 @@ class CohesionAnalyzerEnglish:
 
 
 model = CohesionAnalyzerEnglish("""
-    John Grisham graduated from Mississippi State University before attending the University of Mississippi School of Law in 1981.
-    He practiced criminal law for about a decade and served in the House of Representatives in Mississippi from January 1984 to September 1990.
-    His first novel, A Time to Kill, was published in June 1989, four years after he began writing it. [LINEBREAK]
-    As of 2012, his books and novellas have sold over 275 million copies worldwide.
-    A Galaxy British Book Awards winner, Grisham is one of only three authors to sell 2 million copies on a first printing.
-    Michael went into the pool.""")
+    Over the last decade, several reports have dealt with the relationship
+    of total body fat or body fat distribution with cancer risk. However,
+    only a few studies were carried out in large samples of populations
+    (1000 subjects or more), and, in most of these studies, the confounding
+    effects of factors such as race, sex, age, concomitant diseases,
+    chronic use of medications, and behavioral factors were not extensively
+    evaluated. Furthermore, the independent effect of total body fat after
+    adjustment for body fat localization, or vice versa, the independent
+    effect of body fat localization after controlling for total body fat,
+    was rarely examined. Yet, the results achieved by the different
+    investigators were not always consistent. In fact, while the
+    deleterious effects of an excess body fat on cancer is unquestioned,
+    the impact of body fat localization is still a matter of controversy.
+    Some reports suggested that a central pattern of body fat distribution
+    is independently associated with higher cancer risk, while other
+    reports did not reach the same conclusion.""")
 
 # text3 = """Das Wissen zeichnet einen Menschen aus. Sprachkenntnis zum
 #     Beispiel ist wichtig, da Menschen sonst nicht Sprechen koennen. Der Bezug
