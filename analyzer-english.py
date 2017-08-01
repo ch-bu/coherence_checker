@@ -453,9 +453,8 @@ class CohesionAnalyzerEnglish:
         # Generate html string
         html_string = self._get_html_string(word_lemma_mapping, word_cluster_index)
 
-
         return {'links': self.word_pairs,
-                'nodes': nodes,
+                'nodes': nodes_dict,
                 'numSentences': len(self.sents),
                 'numConcepts': len(nodes),
                 'clusters': cluster,
