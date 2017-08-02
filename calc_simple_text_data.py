@@ -41,13 +41,13 @@ for index, row in data.iterrows():
     res_post = analyzeTextCohesion(row['post_text'].replace('[BREAK]', ' '))
 
     # Retrieve important variables from data
-    sentences_post = res['numSentences']
-    num_clusters_post = res['numCluster']
-    local_cohesion_post = res['local cohesion']
-    num_concepts_post = res['numConcepts']
-    num_coh_sentences_post = res['cohSentences']
-    num_non_coh_sentences_post = res['cohNotSentences']
-    num_relations_post = res['numRelations']
+    sentences_post = res_post['numSentences']
+    num_clusters_post = res_post['numCluster']
+    local_cohesion_post = res_post['local cohesion']
+    num_concepts_post = res_post['numConcepts']
+    num_coh_sentences_post = res_post['cohSentences']
+    num_non_coh_sentences_post = res_post['cohNotSentences']
+    num_relations_post = res_post['numRelations']
     # num_pure_lexical_overlaps = res['numPureLexicalOverlaps']
 
 
@@ -63,7 +63,7 @@ for index, row in data.iterrows():
 
 # Save data as csv
 data_with_values.to_csv(
-    '/home/christian/Repositories/goldstandardstudy-ss17/data/study3/study3_data_analyzed_version1.csv',
+    '/home/christian/Repositories/goldstandardstudy-ss17/data/study3/study3_data_analyzed_version5.csv',
     encoding='utf-8', index=False)
 
 # data_with_values.to_csv(
