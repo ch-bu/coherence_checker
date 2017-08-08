@@ -1,7 +1,7 @@
 # encoding: utf-8
 
 from nltk.corpus import wordnet as wn
-from itertools import combinations, permutations, chain
+from itertools import combinations, permutations, chain, repeat
 import re
 import spacy
 
@@ -112,10 +112,10 @@ class CohesionAnalyzerEnglish:
                 noun_chunks_next = list(self.sents[index + 1].noun_chunks)
 
                 # Combine all chunks between two sentences
-                my_combinations = [zip(x, noun_chunks_next) for x in combinations(noun_chunks, 2)]
+                my_combinations = list(list(zip(r, p)) for (r, p) in zip(repeat(noun_chunks), permutations(noun_chunks_next)))
 
                 # Calculate similarity between pairs
-                similarity_pairs =  [(pair[0], pair[1], pair[0].similarity(pair[1])) for comb in my_combinations for pair in comb]
+                similarity_pairs = [(pair[0], pair[1], pair[0].similarity(pair[1])) for comb in my_combinations for pair in comb]
 
                 # We are only interested in pairs with a high similarity
                 similarity_filter = filter(lambda x: x[2] > .72, similarity_pairs)
@@ -124,23 +124,23 @@ class CohesionAnalyzerEnglish:
                 if similarity_filter:
                     # Loop over every pair and append
                     for pair in similarity_filter:
-                        print pair[0].root.lemma_
-                        if pair[0].root.lemma_ in word_dict:
-                            if pair[1].root.lemma_ in word_dict:
-                                word_pairs.append({'source': word_dict[pair[0].root.lemma_],
-                                                   'target': word_dict[pair[1].root.lemma_],
-                                                   'device': 'between'})
+                        if pair[0].orth_ != pair[1].orth_:
+                            if pair[0].root.lemma_ in word_dict:
+                                if pair[1].root.lemma_ in word_dict:
+                                    word_pairs.append({'source': word_dict[pair[0].root.lemma_],
+                                                       'target': word_dict[pair[1].root.lemma_],
+                                                       'device': 'between'})
 
+                                else:
+                                    word_dict[pair[1].root.lemma_] = pair[1].orth_
+                                    word_pairs.append({'source': word_dict[pair[0].root.lemma_],
+                                                       'target': pair[1].orth_,
+                                                       'device': 'between'})
                             else:
-                                word_dict[pair[1].root.lemma_] = pair[1].orth_
-                                word_pairs.append({'source': word_dict[pair[0].root.lemma_],
+                                word_dict[pair[0].root.lemma_] = pair[0].orth_
+                                word_pairs.append({'source': pair[0].orth_,
                                                    'target': pair[1].orth_,
                                                    'device': 'between'})
-                        else:
-                            word_dict[pair[0].root.lemma_] = pair[0].orth_
-                            word_pairs.append({'source': pair[0].orth_,
-                                               'target': pair[1].orth_,
-                                               'device': 'between'})
 
         print word_pairs
         return word_pairs, subjects
@@ -504,8 +504,7 @@ information are a few of the most common complaints of older adults.
  Memory performance is usually related to the active functioning
  of three stages. These three stages are encoding, storage and retrieval."""
 
-text = u"""The universe is a vast space. The earth in is the middle of it.
-    He was taken to the hospital."""
+text = u"""I go the cinema. The movie was great, lots of tension."""
 
 analyzer = CohesionAnalyzerEnglish(text)
 
