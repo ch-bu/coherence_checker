@@ -55,7 +55,7 @@ class CohesionAnalyzerEnglish:
 
             # We only have one noun chunk
             if len(noun_chunks) == 1:
-                # print noun_chunks
+                # Add chunk to dic it not existent
                 if not noun_chunks[0].root.lemma_ in word_dict:
                     word_dict[noun_chunks[0].root.lemma_] = noun_chunks[0].orth_
 
@@ -64,16 +64,44 @@ class CohesionAnalyzerEnglish:
                                    'target': word_dict[noun_chunks[0].root.lemma_],
                                    'device': 'within'})
             # The subject is a pronoun and we have only one noun phrase
-            elif subject.root.pos_ == 'PRON' and len(noun_chunks) == 2:
-                if not noun_chunks[1].root.lemma_ in word_dict:
-                    word_dict[noun_chunks[1].root.lemma_] = noun_chunks[1].orth_
+            elif subject.root.pos_ == 'PRON':
+                if len(noun_chunks) == 2:
+                    if not noun_chunks[1].root.lemma_ in word_dict:
+                        word_dict[noun_chunks[1].root.lemma_] = noun_chunks[1].orth_
 
-                # Append
-                word_pairs.append({'source': word_dict[noun_chunks[1].root.lemma_],
-                                   'target': word_dict[noun_chunks[1].root.lemma_],
-                                   'device': 'within'})
+                    # Append
+                    word_pairs.append({'source': word_dict[noun_chunks[1].root.lemma_],
+                                       'target': word_dict[noun_chunks[1].root.lemma_],
+                                       'device': 'within'})
+                # There are multiple noun_chunks
+                elif len(noun_chunks) > 2:
+                    # Get all combinations
+                    no_sub_combinations = combinations(noun_chunks, 2)
+
+                    # There are combinations
+                    if no_sub_combinations:
+                        # Add all combinations
+                        for comb in no_sub_combinations:
+                            if comb[0].root.pos_ != 'PRON' \
+                                and comb[1].root.pos_ != 'PRON':
+                                if comb[0].root.lemma_ in word_dict:
+                                    if comb[1].root.lemma_ in word_dict:
+                                        word_pairs.append({'source': word_dict[comb[0].root.lemma_],
+                                                           'target': word_dict[comb[1].root.lemma_],
+                                                           'device': 'between'})
+
+                                    else:
+                                        word_dict[comb[1].root.lemma_] = comb[1].orth_
+                                        word_pairs.append({'source': word_dict[comb[0].root.lemma_],
+                                                           'target': comb[1].orth_,
+                                                           'device': 'between'})
+                                else:
+                                    word_dict[comb[0].root.lemma_] = comb[0].orth_
+                                    word_pairs.append({'source': comb[0].orth_,
+                                                       'target': comb[1].orth_,
+                                                       'device': 'between'})
             # We have a subject
-            elif subject:
+            elif subject and subject.root.dep_ != 'PRON':
                 # Combine subject with noun_chunks
                 for chunk in noun_chunks:
                     # Do not combine the same chunk
@@ -100,29 +128,28 @@ class CohesionAnalyzerEnglish:
                                                'target': chunk.orth_,
                                                'device': 'within'})
             # If there is no subject combine every pair
-            else:
-                no_sub_combinations = combinations(noun_chunks_next, 2)
-
+            elif not subject:
+                no_sub_combinations = combinations(noun_chunks, 2)
                 # There are combinations
                 if no_sub_combinations:
                     # Add all combinations
-                    for comb in combinations:
+                    for comb in no_sub_combinations:
                         if comb[0].root.pos_ != 'PRON' \
                             and comb[1].root.pos_ != 'PRON':
                             if comb[0].root.lemma_ in word_dict:
                                 if comb[1].root.lemma_ in word_dict:
-                                    word_combs.append({'source': word_dict[comb[0].root.lemma_],
+                                    word_pairs.append({'source': word_dict[comb[0].root.lemma_],
                                                        'target': word_dict[comb[1].root.lemma_],
                                                        'device': 'between'})
 
                                 else:
                                     word_dict[comb[1].root.lemma_] = comb[1].orth_
-                                    word_combs.append({'source': word_dict[comb[0].root.lemma_],
+                                    word_pairs.append({'source': word_dict[comb[0].root.lemma_],
                                                        'target': comb[1].orth_,
                                                        'device': 'between'})
                             else:
                                 word_dict[comb[0].root.lemma_] = comb[0].orth_
-                                word_combs.append({'source': comb[0].orth_,
+                                word_pairs.append({'source': comb[0].orth_,
                                                    'target': comb[1].orth_,
                                                    'device': 'between'})
 
