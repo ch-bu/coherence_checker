@@ -1,7 +1,7 @@
 # encoding: utf-8
 
 from nltk.corpus import wordnet as wn
-from itertools import combinations, chain
+from itertools import combinations, permutations, chain
 import re
 import spacy
 
@@ -33,14 +33,6 @@ class CohesionAnalyzerEnglish:
                        [pair['target'] for pair in self.word_pairs]))
 
 
-    def get_pos_from_noun_chunk(self, chunk):
-
-
-        # print(dep)
-
-        return chunk
-
-
     def _generate_nouns(self):
         """Filter all nouns from sentences and
         return list of sentences with nouns"""
@@ -49,18 +41,21 @@ class CohesionAnalyzerEnglish:
         subjects = []
         word_dict = {}
 
-        for sentence in self.sents:
-            print(sentence)
-
+        for index, sentence in enumerate(self.sents):
+            # Get noun chunks
             noun_chunks = list(sentence.noun_chunks)
+
+            # Get first subject
             subject = [sub for sub in noun_chunks if any(sub.root.dep_ for s in ['nsubj', 'csubj', 'nsubjpass'])][0]
+
+            # Append subject to list
             subjects.append(subject)
 
-
+            # We have a subject
             if subject:
-                print subject
-                # Combine pairs
+                # Combine subject with noun_chunks
                 for chunk in noun_chunks:
+                    # Do not combine the same chunk
                     if chunk.orth_ != subject.orth_:
                         # We already stored a subject with the same root
                         if subject.root.lemma_ in word_dict:
@@ -69,7 +64,7 @@ class CohesionAnalyzerEnglish:
                                 word_pairs.append({'source': word_dict[subject.root.lemma_],
                                                    'target': word_dict[chunk.root.lemma_],
                                                    'device': 'within'})
-
+                            # The noun chunk is new to us
                             else:
                                 word_dict[chunk.root.lemma_] = chunk
                                 word_pairs.append({'source': word_dict[subject.root.lemma_],
@@ -82,7 +77,40 @@ class CohesionAnalyzerEnglish:
                                                'target': chunk.orth_,
                                                'device': 'within'})
 
+            # Lets look at the next sentence if there is a link between the two
+            if index < (len(self.sents) - 1):
+                # Get noun chunks of next sentence
+                noun_chunks_next = list(self.sents[index + 1].noun_chunks)
 
+                # Combine all chunks between two sentences
+                my_combinations = [zip(x, noun_chunks_next) for x in combinations(noun_chunks, 2)]
+
+                # Calculate similarity between pairs
+                similarity_pairs =  [(pair[0], pair[1], pair[0].similarity(pair[1])) for comb in my_combinations for pair in comb]
+
+                # We are only interested in pairs with a high similarity
+                similarity_filter = filter(lambda x: x[2] > .72, similarity_pairs)
+
+                # We have found chunks that are similar
+                if similarity_filter:
+                    # Loop over every pair and append
+                    for pair in similarity_filter:
+                        if pair[0].root.lemma_ in word_dict:
+                            if pair[1].root.lemma_ in word_dict:
+                                word_pairs.append({'source': word_dict[pair[0].root.lemma_],
+                                                   'target': word_dict[pair[1].root.lemma_],
+                                                   'device': 'between'})
+
+                            else:
+                                word_dict[pair[1].root.lemma_] = pair[1].orth_
+                                word_pairs.append({'source': word_dict[pair[0].root.lemma_],
+                                                   'target': pair[1].orth_,
+                                                   'device': 'between'})
+                        else:
+                            word_dict[pair[0].root.lemma_] = pair[0].orth_
+                            word_pairs.append({'source': pair[0].orth_,
+                                               'target': pair[1].orth_,
+                                               'device': 'between'})
 
         return word_pairs, subjects
 
@@ -455,10 +483,7 @@ information are a few of the most common complaints of older adults.
  Memory performance is usually related to the active functioning
  of three stages. These three stages are encoding, storage and retrieval."""
 
-text = u"""Cognitive load refers to the total
-amount of mental effort being used in the working memory.
-Cognitive load theory was developed out of the study of problem
-solving by John Sweller in the late 1980s. Sweller is a champion. Memory is a difficult subject"""
+text = u"""The universe is a vast space. The earth in is the middle of it."""
 
 analyzer = CohesionAnalyzerEnglish(text)
 
