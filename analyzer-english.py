@@ -56,7 +56,9 @@ class CohesionAnalyzerEnglish:
                 # Combine subject with noun_chunks
                 for chunk in noun_chunks:
                     # Do not combine the same chunk
-                    if chunk.orth_ != subject.orth_:
+                    if chunk.orth_ != subject.orth_ \
+                        and chunk.root.pos_ != 'PRON' \
+                        and subject.root.pos_ != 'PRON':
                         # We already stored a subject with the same root
                         if subject.root.lemma_ in word_dict:
                             # We alredy stored the noun chunk
@@ -76,6 +78,33 @@ class CohesionAnalyzerEnglish:
                             word_pairs.append({'source': subject.orth_,
                                                'target': chunk.orth_,
                                                'device': 'within'})
+            # If there is no subject combine every pair
+            else:
+                no_sub_combinations = combinations(noun_chunks_next, 2)
+
+                # There are combinations
+                if no_sub_combinations:
+                    # Add all combinations
+                    for comb in combinations:
+                        if comb[0].root.pos_ != 'PRON' \
+                            and comb[1].root.pos_ != 'PRON':
+                            if comb[0].root.lemma_ in word_dict:
+                                if comb[1].root.lemma_ in word_dict:
+                                    word_combs.append({'source': word_dict[comb[0].root.lemma_],
+                                                       'target': word_dict[comb[1].root.lemma_],
+                                                       'device': 'between'})
+
+                                else:
+                                    word_dict[comb[1].root.lemma_] = comb[1].orth_
+                                    word_combs.append({'source': word_dict[comb[0].root.lemma_],
+                                                       'target': comb[1].orth_,
+                                                       'device': 'between'})
+                            else:
+                                word_dict[comb[0].root.lemma_] = comb[0].orth_
+                                word_combs.append({'source': comb[0].orth_,
+                                                   'target': comb[1].orth_,
+                                                   'device': 'between'})
+
 
             # Lets look at the next sentence if there is a link between the two
             if index < (len(self.sents) - 1):
@@ -95,6 +124,7 @@ class CohesionAnalyzerEnglish:
                 if similarity_filter:
                     # Loop over every pair and append
                     for pair in similarity_filter:
+                        print pair[0].root.lemma_
                         if pair[0].root.lemma_ in word_dict:
                             if pair[1].root.lemma_ in word_dict:
                                 word_pairs.append({'source': word_dict[pair[0].root.lemma_],
@@ -112,18 +142,9 @@ class CohesionAnalyzerEnglish:
                                                'target': pair[1].orth_,
                                                'device': 'between'})
 
+        print word_pairs
         return word_pairs, subjects
 
-
-# text = u"""The forgetting of crucial information or disremembering is the apparent loss or
-# modification of information already encoded and stored in an
-# individual's long-term memory. It is a spontaneous or gradual
-# process in which old memories are unable to be recalled from memory storage.
-# Forgetting also helps to reconcile the storage of new information with old
-# knowledge.[1] Problems with remembering, learning and retaining new
-# information are a few of the most common complaints of older adults.
-#  Memory performance is usually related to the active functioning
-#  of three stages. These three stages are encoding, storage and retrieval."""
 
     def _calculate_number_relations(self):
         """Calculates the number of relations"""
@@ -483,7 +504,8 @@ information are a few of the most common complaints of older adults.
  Memory performance is usually related to the active functioning
  of three stages. These three stages are encoding, storage and retrieval."""
 
-text = u"""The universe is a vast space. The earth in is the middle of it."""
+text = u"""The universe is a vast space. The earth in is the middle of it.
+    He was taken to the hospital."""
 
 analyzer = CohesionAnalyzerEnglish(text)
 
