@@ -2,6 +2,7 @@
 
 from nltk.corpus import wordnet as wn
 from itertools import combinations, permutations, chain, repeat
+from collections import Counter
 import re
 import spacy
 
@@ -14,6 +15,7 @@ class CohesionAnalyzerEnglish:
         # Remove parenthesis in the whole text
         text_nlp = text.decode('utf-8').replace('[LINEBREAK]', '')
         text_nlp = re.sub("([\(\[]).*?([\)\]])", "", text_nlp)
+        text_nlp = re.sub('\n', ' ', text_nlp)
 
         # Prepare text and remove unwanted characters
         self.text = self.nlp(text_nlp)
@@ -55,7 +57,7 @@ class CohesionAnalyzerEnglish:
             if len(noun_chunks) == 1:
                 # print noun_chunks
                 if not noun_chunks[0].root.lemma_ in word_dict:
-                    word_dict[noun_chunks[0].root.lemma_] = noun_chunks[0]
+                    word_dict[noun_chunks[0].root.lemma_] = noun_chunks[0].orth_
 
                 # Append
                 word_pairs.append({'source': word_dict[noun_chunks[0].root.lemma_],
@@ -64,7 +66,7 @@ class CohesionAnalyzerEnglish:
             # The subject is a pronoun and we have only one noun phrase
             elif subject.root.pos_ == 'PRON' and len(noun_chunks) == 2:
                 if not noun_chunks[1].root.lemma_ in word_dict:
-                    word_dict[noun_chunks[1].root.lemma_] = noun_chunks[1]
+                    word_dict[noun_chunks[1].root.lemma_] = noun_chunks[1].orth_
 
                 # Append
                 word_pairs.append({'source': word_dict[noun_chunks[1].root.lemma_],
@@ -87,13 +89,13 @@ class CohesionAnalyzerEnglish:
                                                    'device': 'within'})
                             # The noun chunk is new to us
                             else:
-                                word_dict[chunk.root.lemma_] = chunk
+                                word_dict[chunk.root.lemma_] = chunk.orth_
                                 word_pairs.append({'source': word_dict[subject.root.lemma_],
                                                    'target': chunk.orth_,
                                                    'device': 'within'})
                         # We haven't stored the current subject
                         else:
-                            word_dict[subject.root.lemma_] = subject
+                            word_dict[subject.root.lemma_] = subject.orth_
                             word_pairs.append({'source': subject.orth_,
                                                'target': chunk.orth_,
                                                'device': 'within'})
@@ -161,7 +163,6 @@ class CohesionAnalyzerEnglish:
                                                    'target': pair[1].orth_,
                                                    'device': 'between'})
 
-        print word_pairs
         return word_pairs, subjects
 
 
@@ -299,52 +300,7 @@ class CohesionAnalyzerEnglish:
         return word_cluster_index
 
 
-    def _get_lemma_word_mapping(self, nodes):
-        """Returns a dictionary with the lemma as key and the
-        inflected words as values"""
-
-        # Init mapping
-        mapping = {}
-
-        # Loop over every word in text
-        for token in self.text:
-            # Word is part of nodes for visualization
-            if token.lemma_ in nodes:
-                # We have already assigned this word to a key
-                if token.lemma_ in mapping:
-                    # Avoid duplicates
-                    if token.orth_ not in mapping[token.lemma_]:
-                        mapping[token.lemma_].append(token.orth_)
-                # This word is knew, let's start a knew key
-                else:
-                    mapping[token.lemma_] = [token.orth_]
-
-        return mapping
-
-
-    def _get_word_lemma_mapping(self, nodes):
-        """Returns a dictionary with the word as a key
-        and the lemma as a value"""
-
-        mapping = {}
-
-        # Loop over every word in text
-        for token in self.text:
-            # Word ist part of nodes for visualization
-            if token.lemma_ in nodes:
-                # We have already assigned this word to a key
-                if token.orth_ in mapping:
-                    # Avoid duplicates
-                    if token.lemma_ not in mapping[token.orth_]:
-                        mapping[token.orth_].append(token.lemma_)
-                # This word is knew, let's start a knew key
-                else:
-                    mapping[token.orth_] = [token.lemma_]
-
-        return mapping
-
-
-    def _get_html_string(self, word_lemma_mapping, word_cluster_index):
+    def _get_html_string(self, node_list, word_cluster_index):
         """Generates an html string with spans for each word in order
         to signal the mapping between visualization and text
 
@@ -355,119 +311,57 @@ class CohesionAnalyzerEnglish:
         Returns:
             String - An html formatted string
         """
+        # Init string to return
+        html_string = ''
 
-        html_string = '';
-
+        # Loop over every paragraph in text
         for paragraph in self.paragraphs:
-            #######################################
-            # Render text for integrated group
-            #######################################
+            # Start string
+            html_string += '<p>'
 
-            # Split text into sentences
+            # Divide text into sentences
             tokens = self.nlp(paragraph)
             tokenized_sentences = [sent for sent in tokens.sents]
 
-            # for sentence in tokenized_sentences:
-            #     print sentence.orth_.split()
-
-            # Split words within sentences
-            words_split_per_sentence = [sentence.orth_.split() for sentence in tokenized_sentences]
-
-            # Prepare html string
-            paragraph_string = '<p>'
-
             # Loop over every sentence
-            for index, sentence in enumerate(words_split_per_sentence):
-                # Store cluster uf current sentence
-                cluster_current = []
+            for index, sent in enumerate(tokenized_sentences):
+                # Do not look at the last sentence
+                if index != (len(tokenized_sentences) - 1):
+                    # Get cluster of current sentence
+                    indexes_cur_sentence = [word_cluster_index[node] for node in node_list if sent.text.find(node) != -1]
+                    indexes_next_sentence = [word_cluster_index[node] for node in node_list if tokenized_sentences[index + 1].text.find(node) != -1]
 
-                # Store the end of line character
-                # We need to store the character to append it
-                # afterwards
-                end_of_line_character = sentence[-1][-1]
+                    # Get most common cluster of current sentence
+                    most_common_cluster_cur = Counter(indexes_cur_sentence).most_common(1)
+                    most_common_cluster_next = Counter(indexes_next_sentence).most_common(1)
 
-                # Remove end of line characters
-                words = [re.sub(r'[.\!?]', '', s) for s in sentence]
+                    # Get cluster for each sentence
+                    cluster_cur = -1 if len(most_common_cluster_cur) == 0 else most_common_cluster_cur[0][0]
+                    cluster_next = -1 if len(most_common_cluster_next) == 0 else most_common_cluster_next[0][0]
 
-                # Loop over every word in current sentence
-                for word in words:
-                    # We need to reset the carrier for every word otherwise
-                    # every word will be appended with the carrier
-                    carrier = None
+                    # Did the cluster change?
+                    cluster_changed = False if cluster_cur == cluster_next else True
 
-                    # Check if word ends with a special character
-                    if word.endswith(':') or word.endswith(',') or word.endswith(';'):
-                        carrier = word[-1]
-                        word = re.sub(r'[:,;]', '', word)
+                    # Append sentence to string
+                    html_string += sent.text + ' '
 
-                    # Check if there is a lemma for current word and catch
-                    # any KeyError
-                    try:
-                        # Get lemma for word
-                        lemma = word_lemma_mapping[word][0]
-
-                        # Get cluster number for word
-                        cluster_of_word = word_cluster_index[lemma]
-
-                        # Push cluster ot current cluster list
-                        cluster_current.append(cluster_of_word)
-
-                        # Append html string with span tag and according class
-                        paragraph_string += '<span class="cluster-' + str(cluster_of_word) + '">' + word + '</span>'
-
-                    # The word does not occur in the word lemma dicitonary
-                    # It should not be assigned a class for highlighting
-                    except KeyError:
-                        paragraph_string += '<span>' + word + '</span>'
-
-                    # Append carrier if it exists
-                    paragraph_string += carrier if carrier else ''
-                    paragraph_string += ' '
-
-                ############################################################
-                # Check if cluster changes for next sentence
-                ############################################################
-                if index != (len(words_split_per_sentence) - 1) \
-                        and len(tokenized_sentences) > 1:
-                    # Get words for next sentence
-                    words_next_sentence = [re.sub(r'[.\!?]', '', s) for s in words_split_per_sentence[index + 1]]
-
-                    # Initialize cluster of next sentence
-                    cluster_next = []
-
-                    for word in words_next_sentence:
-                        # Catch errors
-                        try:
-                            lemma = word_lemma_mapping[word][0]
-
-                            cluster_of_word_next_sentence = word_cluster_index[lemma]
-
-                            cluster_next.append(cluster_of_word_next_sentence)
-                        except KeyError:
-                            pass
-
-                # If we only have one sentence append only the end of line character
-                if len(tokenized_sentences) <= 1:
-                    paragraph_string = paragraph_string[:-1]
-                    paragraph_string += end_of_line_character
-                    paragraph_string += ' '
-                # We have more than one sentence
+                    # Add cluster change symbol
+                    html_string = html_string + '&#8660; ' if cluster_changed else html_string
+                # Append last sentence
                 else:
-                    # See if cluster of adjacent sentence differ
-                    cluster_changed = set(cluster_current) != set(cluster_next)
+                    html_string += sent.text
 
-                    # Append end of line character and add an empty space.
-                    # The empty space is necessary otherwise the next sentence
-                    # will directly align to the current sentence
-                    paragraph_string = paragraph_string[:-1]
-                    paragraph_string += end_of_line_character
-                    paragraph_string += '&#8660; ' if cluster_changed else ''
-                    paragraph_string += ' '
+            # Finish paragraph
+            html_string += '</p>'
 
-            # End paragraph
-            paragraph_string += '</p>'
+        # Replace strings with
+        for node in node_list:
+            # Get cluster
+            cluster = word_cluster_index[node]
 
-            html_string += paragraph_string
+            # Change to span element
+            html_string = html_string.replace(node, '<span class="cluster-' + str(cluster) + '">' + node + '</span>')
+
 
         return html_string
 
@@ -479,52 +373,42 @@ class CohesionAnalyzerEnglish:
         cluster = self._get_clusters()
 
         # Create dictionary of words and it's corresponding clusters
-        # word_cluster_index = self._get_word_cluster_index(cluster)
+        word_cluster_index = self._get_word_cluster_index(cluster)
 
         # Get unique nodes
-        # nodes = map(lambda x: [x['source'], x['target']], self.word_pairs)
-        # nodes_list = list(set(list(chain(*nodes))))
-        # nodes_dict = [{'id': word, 'index': ind} for ind, word, in enumerate(nodes_list)]
-
-        # Generate dict with lemma as key and orth as value
-        # lemma_word_mapping = self._get_lemma_word_mapping(nodes_list)
-
-        # Generate dict with orth as key and lemma as value
-        # word_lemma_mapping = self._get_word_lemma_mapping(nodes_list)
+        nodes = map(lambda x: [x['source'], x['target']], self.word_pairs)
+        nodes_list = list(set(list(chain(*nodes))))
+        nodes_dict = [{'id': word, 'index': ind} for ind, word, in enumerate(nodes_list)]
 
         # Generate html string
-        # html_string = self._get_html_string(word_lemma_mapping, word_cluster_index)
+        html_string = self._get_html_string(nodes_list, word_cluster_index)
 
-
-        return self.word_pairs
+        print html_string
+        # return self.word_pairs
         # return {'links': self.word_pairs,
         #         'nodes': nodes_dict,
         #         'numSentences': len(self.sents),
         #         'numConcepts': len(nodes),
         #         'clusters': cluster,
-        #         'lemmaWordRelations': lemma_word_mapping,
-        #         'wordLemmaRelations': word_lemma_mapping,
+        #         # 'lemmaWordRelations': lemma_word_mapping,
+        #         # 'wordLemmaRelations': word_lemma_mapping,
         #         'numRelations': self._calculate_number_relations(),
         #         'numCluster': len(cluster),
         #         'numSentences': len(self.sents),
         #         'numConcepts': len(self.concepts),
-        #         'wordClusterIndex': word_cluster_index,
-        #         'html_string': html_string,
-        #         'subjects': self.subjects}
+        #         'wordClusterIndex': word_cluster_index}
+                # 'html_string': html_string}
+                # 'subjects': self.subjects}
 
 
 text = u"""Forgetting is the apparent loss or
 modification of information already encoded and stored in an
 individual's long-term memory. It is a spontaneous or gradual
 process in which old memories are unable to be recalled from memory storage.
-Forgetting also helps to reconcile the storage of new information with old
-knowledge.[1] Problems with remembering, learning and retaining new
-information are a few of the most common complaints of older adults.
- Memory performance is usually related to the active functioning
- of three stages. These three stages are encoding, storage and retrieval."""
+Peter Pan dreams of a fight."""
 
-text = u"""I go the cinema. Bill goes to school. New york is great."""
+# text = u"""I go the cinema. Bill goes to school. New york is great."""
 
 analyzer = CohesionAnalyzerEnglish(text)
 
-analyzer.get_data_for_visualization()
+print analyzer.get_data_for_visualization()
