@@ -47,12 +47,31 @@ class CohesionAnalyzerEnglish:
 
             # Get first subject
             subject = [sub for sub in noun_chunks if any(sub.root.dep_ for s in ['nsubj', 'csubj', 'nsubjpass'])][0]
-
+            # print (subject, subject.root.dep_, subject.root.pos_)
             # Append subject to list
             subjects.append(subject)
 
+            # We only have one noun chunk
+            if len(noun_chunks) == 1:
+                # print noun_chunks
+                if not noun_chunks[0].root.lemma_ in word_dict:
+                    word_dict[noun_chunks[0].root.lemma_] = noun_chunks[0]
+
+                # Append
+                word_pairs.append({'source': word_dict[noun_chunks[0].root.lemma_],
+                                   'target': word_dict[noun_chunks[0].root.lemma_],
+                                   'device': 'within'})
+            # The subject is a pronoun and we have only one noun phrase
+            elif subject.root.pos_ == 'PRON' and len(noun_chunks) == 2:
+                if not noun_chunks[1].root.lemma_ in word_dict:
+                    word_dict[noun_chunks[1].root.lemma_] = noun_chunks[1]
+
+                # Append
+                word_pairs.append({'source': word_dict[noun_chunks[1].root.lemma_],
+                                   'target': word_dict[noun_chunks[1].root.lemma_],
+                                   'device': 'within'})
             # We have a subject
-            if subject:
+            elif subject:
                 # Combine subject with noun_chunks
                 for chunk in noun_chunks:
                     # Do not combine the same chunk
@@ -504,7 +523,7 @@ information are a few of the most common complaints of older adults.
  Memory performance is usually related to the active functioning
  of three stages. These three stages are encoding, storage and retrieval."""
 
-text = u"""I go the cinema. The movie was great, lots of tension."""
+text = u"""I go the cinema. Bill goes to school. New york is great."""
 
 analyzer = CohesionAnalyzerEnglish(text)
 
