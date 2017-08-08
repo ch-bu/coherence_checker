@@ -4,27 +4,19 @@ from nltk.corpus import wordnet as wn
 from itertools import combinations, chain
 import re
 import spacy
-from langdetect import detect
 
-# https://stackoverflow.com/questions/39763091/how-to-extract-subjects-in-a-sentence-and-their-respective-dependent-phrases
-# https://github.com/krzysiekfonal/textpipeliner
 class CohesionAnalyzerEnglish:
 
     def __init__(self, text):
-        # Get language of text
-        language = detect(text.decode('utf-8'))
+        # Load spacy
+        self.nlp = spacy.load('en_core_web_md')
 
-        # English text
-        if language == 'en':
-            # Load spacy
-            self.nlp = spacy.load('en')
-        # German text
-        elif language == 'de':
-            # Load spacy
-            self.nlp = spacy.load('de')
+        # Remove parenthesis in the whole text
+        text_nlp = text.decode('utf-8').replace('[LINEBREAK]', '')
+        text_nlp = re.sub("([\(\[]).*?([\)\]])", "", text_nlp)
 
         # Prepare text and remove unwanted characters
-        self.text = self.nlp(text.decode('utf-8'))
+        self.text = self.nlp(text_nlp)
 
         # Paragraphs
         self.paragraphs = text.decode('utf-8').split('[LINEBREAK]')
@@ -33,97 +25,77 @@ class CohesionAnalyzerEnglish:
         self.sents = [sent for sent in self.text.sents]
 
         # Word pairs
-        self.word_pairs = self._generate_nouns() + self._generate_hyponyms_hyperonyms()
+        nouns, self.subjects = self._generate_nouns()
+        self.word_pairs = nouns
 
         # All concepts
-        self.concepts = list(set([pair['source'] for pair in self.word_pairs] + \
+        self.concepts = list(set([pair['source'] for pair in self.word_pairs] +
                        [pair['target'] for pair in self.word_pairs]))
+
+
+    def get_pos_from_noun_chunk(self, chunk):
+
+
+        # print(dep)
+
+        return chunk
+
 
     def _generate_nouns(self):
         """Filter all nouns from sentences and
         return list of sentences with nouns"""
 
         word_pairs = []
+        subjects = []
+        word_dict = {}
 
         for sentence in self.sents:
-            # Get root from sentence
-            root = [w for w in sentence if w.head is w][0]
+            print(sentence)
 
-            # Get subject
-            try:
-                subject = [child for child in list(root.children) if any(child.dep_ in s for s in ['nsubj', 'nsubjpass'])][0]
-            except IndexError:
-                subject = None
+            noun_chunks = list(sentence.noun_chunks)
+            subject = [sub for sub in noun_chunks if any(sub.root.dep_ for s in ['nsubj', 'csubj', 'nsubjpass'])][0]
+            subjects.append(subject)
 
-            # Extract nouns from sentence
-            nouns = [word for word in sentence if any(word.dep_ in s for s in ['PROPN', 'NOUN'])]
 
-            # Subject is a noun
             if subject:
-                # Build word pairs
-                for noun in nouns:
-                    # Subject should not be the noun
-                    if noun.lemma_ != subject.lemma_:
-                        # Append word pair
-                        word_pairs.append({'source': subject.lemma_, 'target': noun.lemma_})
-            # # There is no subject in the sentence
-            # else:
-            #     # Generate all combinations
-            #     combs = combinations(nouns, 2)
+                print subject
+                # Combine pairs
+                for chunk in noun_chunks:
+                    if chunk.orth_ != subject.orth_:
+                        # We already stored a subject with the same root
+                        if subject.root.lemma_ in word_dict:
+                            # We alredy stored the noun chunk
+                            if chunk.root.lemma_ in word_dict:
+                                word_pairs.append({'source': word_dict[subject.root.lemma_],
+                                                   'target': word_dict[chunk.root.lemma_],
+                                                   'device': 'within'})
 
-            #     # Loop over every combination
-            #     for comb in combs:
-            #         word_pairs.append({'source': comb[0].lemma_, 'target': comb[1].lemma_})
+                            else:
+                                word_dict[chunk.root.lemma_] = chunk
+                                word_pairs.append({'source': word_dict[subject.root.lemma_],
+                                                   'target': chunk.orth_,
+                                                   'device': 'within'})
+                        # We haven't stored the current subject
+                        else:
+                            word_dict[subject.root.lemma_] = subject
+                            word_pairs.append({'source': subject.orth_,
+                                               'target': chunk.orth_,
+                                               'device': 'within'})
 
-        return word_pairs
 
 
-    def _generate_hyponyms_hyperonyms(self):
-        """Generates a word pair list of hyperonyms and
-        hyponyms from a given dataset"""
+        return word_pairs, subjects
 
-        word_pairs = []
 
-        # Loop over every sentence
-        for index, sentence in enumerate(self.sents):
-            # Do not loop over last sentence
-            if index < (len(self.sents) - 1):
-
-                # Get all nouns from current and next sentence
-                nouns_current_sentence = [noun.lemma_ for noun in sentence if any(noun.pos_ in s for s in ['PROPN', 'NOUN'])]
-                nouns_next_sentence = [noun.lemma_ for noun in self.sents[index + 1] if any(noun.pos_ in s for s in ['PROPN', 'NOUN'])]
-
-                # Loop over every noun in current sentence
-                for noun in nouns_current_sentence:
-                    ###############################
-                    # Get hypernyms and hyponyms
-                    ###############################
-                    # Get all synsets of current noun
-                    synsets_current_noun = [synset for synset in wn.synsets(noun)]
-
-                    # Get all hyponyms and hyperonyms from all synsets
-                    hyponyms_current_noun = [synset.hyponyms() for synset in synsets_current_noun]
-                    hypernyms_current_noun = [synset.hypernyms() for synset in synsets_current_noun]
-
-                    # Get all synsets of hyperonyms and hypernyms
-                    synsets = [synset for synsets in (hyponyms_current_noun + hypernyms_current_noun) for synset in synsets]
-
-                    # Get all lemmas
-                    hypernyms_hyponyms = ([lemma.name().replace('_', ' ') for synset in synsets for lemma in synset.lemmas()])
-
-                    ################################
-                    # Connect to next sentence
-                    ################################
-                    # sentences_share_element = bool(set(hypernyms_hyponyms) & set(nouns_next_sentence))
-                    sentences_shared_elements = list(set(hypernyms_hyponyms).intersection(nouns_next_sentence))
-
-                    if len(sentences_shared_elements) > 0:
-                        # print(sentences_share_element)
-                        for shared_element in sentences_shared_elements:
-                            word_pairs.append({'source': noun, 'target': shared_element})
-
-        return word_pairs
-
+# text = u"""The forgetting of crucial information or disremembering is the apparent loss or
+# modification of information already encoded and stored in an
+# individual's long-term memory. It is a spontaneous or gradual
+# process in which old memories are unable to be recalled from memory storage.
+# Forgetting also helps to reconcile the storage of new information with old
+# knowledge.[1] Problems with remembering, learning and retaining new
+# information are a few of the most common complaints of older adults.
+#  Memory performance is usually related to the active functioning
+#  of three stages. These three stages are encoding, storage and retrieval."""
 
     def _calculate_number_relations(self):
         """Calculates the number of relations"""
@@ -439,59 +411,55 @@ class CohesionAnalyzerEnglish:
         cluster = self._get_clusters()
 
         # Create dictionary of words and it's corresponding clusters
-        word_cluster_index = self._get_word_cluster_index(cluster)
+        # word_cluster_index = self._get_word_cluster_index(cluster)
 
         # Get unique nodes
-        nodes = map(lambda x: [x['source'], x['target']], self.word_pairs)
-        nodes_list = list(set(list(chain(*nodes))))
-        nodes_dict = [{'id': word, 'index': ind} for ind, word, in enumerate(nodes_list)]
+        # nodes = map(lambda x: [x['source'], x['target']], self.word_pairs)
+        # nodes_list = list(set(list(chain(*nodes))))
+        # nodes_dict = [{'id': word, 'index': ind} for ind, word, in enumerate(nodes_list)]
 
         # Generate dict with lemma as key and orth as value
-        lemma_word_mapping = self._get_lemma_word_mapping(nodes_list)
+        # lemma_word_mapping = self._get_lemma_word_mapping(nodes_list)
 
         # Generate dict with orth as key and lemma as value
-        word_lemma_mapping = self._get_word_lemma_mapping(nodes_list)
+        # word_lemma_mapping = self._get_word_lemma_mapping(nodes_list)
 
         # Generate html string
-        html_string = self._get_html_string(word_lemma_mapping, word_cluster_index)
-
-        return {'links': self.word_pairs,
-                'nodes': nodes_dict,
-                'numSentences': len(self.sents),
-                'numConcepts': len(nodes),
-                'clusters': cluster,
-                'lemmaWordRelations': lemma_word_mapping,
-                'wordLemmaRelations': word_lemma_mapping,
-                'numRelations': self._calculate_number_relations(),
-                'numCluster': len(cluster),
-                'numSentences': len(self.sents),
-                'numConcepts': len(self.concepts),
-                'html_string': html_string}
+        # html_string = self._get_html_string(word_lemma_mapping, word_cluster_index)
 
 
-model = CohesionAnalyzerEnglish("""
-    Over the last decade, several reports have dealt with the relationship
-    of total body fat or body fat distribution with cancer risk. However,
-    only a few studies were carried out in large samples of populations
-    (1000 subjects or more), and, in most of these studies, the confounding
-    effects of factors such as race, sex, age, concomitant diseases,
-    chronic use of medications, and behavioral factors were not extensively
-    evaluated. Furthermore, the independent effect of total body fat after
-    adjustment for body fat localization, or vice versa, the independent
-    effect of body fat localization after controlling for total body fat,
-    was rarely examined. Yet, the results achieved by the different
-    investigators were not always consistent. In fact, while the
-    deleterious effects of an excess body fat on cancer is unquestioned,
-    the impact of body fat localization is still a matter of controversy.
-    Some reports suggested that a central pattern of body fat distribution
-    is independently associated with higher cancer risk, while other
-    reports did not reach the same conclusion.""")
+        return self.word_pairs
+        # return {'links': self.word_pairs,
+        #         'nodes': nodes_dict,
+        #         'numSentences': len(self.sents),
+        #         'numConcepts': len(nodes),
+        #         'clusters': cluster,
+        #         'lemmaWordRelations': lemma_word_mapping,
+        #         'wordLemmaRelations': word_lemma_mapping,
+        #         'numRelations': self._calculate_number_relations(),
+        #         'numCluster': len(cluster),
+        #         'numSentences': len(self.sents),
+        #         'numConcepts': len(self.concepts),
+        #         'wordClusterIndex': word_cluster_index,
+        #         'html_string': html_string,
+        #         'subjects': self.subjects}
 
-# text3 = """Das Wissen zeichnet einen Menschen aus. Sprachkenntnis zum
-#     Beispiel ist wichtig, da Menschen sonst nicht Sprechen koennen. Der Bezug
-#     zur Realitt ermglicht dies. Vor allem der Praxisbezug ist dabei wichtig.
-#     """
 
-print(model.get_data_for_visualization())
-# print(model2.get_data_for_visualization())
+text = u"""Forgetting is the apparent loss or
+modification of information already encoded and stored in an
+individual's long-term memory. It is a spontaneous or gradual
+process in which old memories are unable to be recalled from memory storage.
+Forgetting also helps to reconcile the storage of new information with old
+knowledge.[1] Problems with remembering, learning and retaining new
+information are a few of the most common complaints of older adults.
+ Memory performance is usually related to the active functioning
+ of three stages. These three stages are encoding, storage and retrieval."""
 
+text = u"""Cognitive load refers to the total
+amount of mental effort being used in the working memory.
+Cognitive load theory was developed out of the study of problem
+solving by John Sweller in the late 1980s. Sweller is a champion. Memory is a difficult subject"""
+
+analyzer = CohesionAnalyzerEnglish(text)
+
+analyzer.get_data_for_visualization()
