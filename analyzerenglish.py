@@ -353,7 +353,7 @@ class CohesionAnalyzerEnglish:
                             # Loop over every possible word for word in visualization
                             for real_word in list(set(visword_to_word[node.lower()])):
                                 # Change to span element
-                                sentence = sentence.replace(real_word, '<span class="cluster-' + str(cluster_cur) + '">' + real_word + '</span>')
+                                sentence = sentence.replace(real_word, '<span class="cluster-' + str(cluster_next) + '">' + real_word + '</span>')
 
                     html_string += sentence
 
