@@ -204,10 +204,6 @@ class CohesionAnalyzerEnglish:
 
                     # Loop over every word pair again
                     for num_again in range(0, len(word_pairs)):
-
-                        # print 'look at (%s, %s)' % (word_pairs[num_again]['source'],
-                        #                             word_pairs[num_again]['target'])
-
                         # Word pairs do not match
                         if num_again not in index_pairs_added:
                             # Store both words of current pair in list
@@ -308,8 +304,8 @@ class CohesionAnalyzerEnglish:
                 # Do not look at the last sentence
                 if index != (len(tokenized_sentences) - 1):
                     # Get cluster of current sentence
-                    indexes_cur_sentence = [word_cluster_index[node] for node in node_list if sent.text.find(node) != -1]
-                    indexes_next_sentence = [word_cluster_index[node] for node in node_list if tokenized_sentences[index + 1].text.find(node) != -1]
+                    indexes_cur_sentence = [word_cluster_index[node] for node in node_list if sent.text.find(visword_to_word[node][0]) != -1]
+                    indexes_next_sentence = [word_cluster_index[node] for node in node_list if tokenized_sentences[index + 1].text.find(visword_to_word[node][0]) != -1]
 
                     # Get most common cluster of current sentence
                     most_common_cluster_cur = Counter(indexes_cur_sentence).most_common(1)
@@ -330,11 +326,13 @@ class CohesionAnalyzerEnglish:
                     for node in node_list:
                         # The word is in the current cluster
                         if word_cluster_index[node] == cluster_cur:
-
                             # Loop over every possible word for word in visualization
                             for real_word in list(set(visword_to_word[node.lower()])):
                                 # Change to span element
-                                sentence = sentence.replace(real_word, '<span class="cluster-' + str(cluster_cur) + '">' + real_word + '</span>')
+                                sentence = sentence.replace(real_word,
+                                    '<span class="cluster-' +
+                                    str(cluster_cur) + '">' +
+                                    real_word + '</span>')
 
                     # Change html_string accordingly
                     html_string += sentence + ' '
@@ -353,7 +351,10 @@ class CohesionAnalyzerEnglish:
                             # Loop over every possible word for word in visualization
                             for real_word in list(set(visword_to_word[node.lower()])):
                                 # Change to span element
-                                sentence = sentence.replace(real_word, '<span class="cluster-' + str(cluster_next) + '">' + real_word + '</span>')
+                                sentence = sentence.replace(real_word,
+                                    '<span class="cluster-' +
+                                    str(cluster_next) + '">' +
+                                    real_word + '</span>')
 
                     html_string += sentence
 
