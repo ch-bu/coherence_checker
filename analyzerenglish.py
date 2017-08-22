@@ -48,8 +48,8 @@ class CohesionAnalyzerEnglish:
         def append_to_word_pairs(zero, one, device):
             """A little helper function to avoid redundancy"""
             word_pairs.append(
-              {'source': word_dict[zero.root.lemma_],
-               'target': word_dict[one.root.lemma_],
+              {'source': word_dict[zero.root.lemma_].lower(),
+               'target': word_dict[one.root.lemma_].lower(),
                'device': device})
 
         # Loop over every sentence
@@ -76,16 +76,14 @@ class CohesionAnalyzerEnglish:
                 else:
                     lemma_to_word[word.root.lemma_] = [word.orth_]
 
-
-
             # Get subjects
             subjects_cur = [s for s in noun_chunks
-                if s.root.dep_ in ['nsubj', 'csubj', 'nsubjpass']]
+                if s.root.dep_ in ['nsubj', 'csubj', 'nsubjpass', 'ROOT']]
             subjects += subjects_cur
 
             # Get objects
             objects_cur = [o for o in noun_chunks
-                if o.root.dep_ in ['dobj', 'obj', 'iobj', 'pobj']]
+                if o.root.dep_ in ['dobj', 'obj', 'iobj', 'pobj', 'attr', 'conj']]
             objects += objects_cur
 
             # There are multiple of both
@@ -149,7 +147,7 @@ class CohesionAnalyzerEnglish:
                                 word_dict[pair[0].root.lemma_] = pair[0].orth_
 
                                 # Append word pairs
-                                append_to_word_pairs(pair[0], pair[1], 'between')
+                                append_to_word_pairs(pair[0].orth_.lower(), pair[1].orth_.lower(), 'between')
                             except AttributeError:
                                 pass
 
@@ -325,13 +323,39 @@ class CohesionAnalyzerEnglish:
                     cluster_changed = False if cluster_cur == cluster_next else True
 
                     # Append sentence to string
-                    html_string += sent.text + ' '
+                    # Loop over every word
+                    sentence = sent.text
+
+                    # Loop over every word we have
+                    for node in node_list:
+                        # The word is in the current cluster
+                        if word_cluster_index[node] == cluster_cur:
+
+                            # Loop over every possible word for word in visualization
+                            for real_word in list(set(visword_to_word[node.lower()])):
+                                # Change to span element
+                                sentence = sentence.replace(real_word, '<span class="cluster-' + str(cluster_cur) + '">' + real_word + '</span>')
+
+                    # Change html_string accordingly
+                    html_string += sentence + ' '
 
                     # Add cluster change symbol
                     html_string = html_string + '&#8660; ' if cluster_changed else html_string
                 # Append last sentence
                 else:
-                    html_string += sent.text
+                    sentence = sent.text
+
+                    # Loop over every word we have
+                    for node in node_list:
+                        # The word is in the current cluster
+                        if word_cluster_index[node] == cluster_next:
+
+                            # Loop over every possible word for word in visualization
+                            for real_word in list(set(visword_to_word[node.lower()])):
+                                # Change to span element
+                                sentence = sentence.replace(real_word, '<span class="cluster-' + str(cluster_cur) + '">' + real_word + '</span>')
+
+                    html_string += sentence
 
             # Finish paragraph
             html_string += '</p>'
@@ -339,15 +363,15 @@ class CohesionAnalyzerEnglish:
         # Remove line breaks
         html_string = html_string.replace('\n', '')
 
-        # Loop over every word
-        for node in node_list:
-            # Get cluster
-            cluster = word_cluster_index[node]
+        # # Loop over every word
+        # for node in node_list:
+        #     # Get cluster
+        #     cluster = word_cluster_index[node]
 
-            # Loop over every possible word for word in visualization
-            for real_word in list(set(visword_to_word[node])):
-                # Change to span element
-                html_string = html_string.replace(real_word, '<span class="cluster-' + str(cluster) + '">' + real_word + '</span>')
+        #     # Loop over every possible word for word in visualization
+        #     for real_word in list(set(visword_to_word[node.lower()])):
+        #         # Change to span element
+        #         html_string = html_string.replace(real_word, '<span class="cluster-' + str(cluster) + '">' + real_word + '</span>')
 
         return html_string
 
