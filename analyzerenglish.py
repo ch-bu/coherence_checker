@@ -39,6 +39,8 @@ class CohesionAnalyzerEnglish:
         return list of sentences with nouns"""
 
         word_pairs = []
+        lemma_to_word = {}
+        visword_to_word = {}
         subjects = []
         objects = []
         word_dict = {}
@@ -46,8 +48,8 @@ class CohesionAnalyzerEnglish:
         def append_to_word_pairs(zero, one, device):
             """A little helper function to avoid redundancy"""
             word_pairs.append(
-              {'source': word_dict[pair[0].root.lemma_],
-               'target': word_dict[pair[1].root.lemma_],
+              {'source': word_dict[zero.root.lemma_],
+               'target': word_dict[one.root.lemma_],
                'device': device})
 
         # Loop over every sentence
@@ -58,8 +60,23 @@ class CohesionAnalyzerEnglish:
 
             # Build dict with lemma
             for word in noun_chunks:
+                word_lower = word.orth_.lower()
+
                 if not word.root.lemma_ in word_dict:
-                    word_dict[word.root.lemma_] = word.orth_.lower()
+                    word_dict[word.root.lemma_] = word_lower
+
+                if visword_to_word.get(word_lower):
+                    visword_to_word[word_lower].append(word.orth_)
+                else:
+                    visword_to_word[word_lower] = [word.orth_]
+
+                # lemma_to_word[word.root.lemma]:
+                if lemma_to_word.get(word.root.lemma_):
+                    lemma_to_word[word.root.lemma_].append(word.orth_)
+                else:
+                    lemma_to_word[word.root.lemma_] = [word.orth_]
+
+
 
             # Get subjects
             subjects_cur = [s for s in noun_chunks
@@ -136,7 +153,7 @@ class CohesionAnalyzerEnglish:
                             except AttributeError:
                                 pass
 
-        return word_pairs, subjects, objects
+        return word_pairs, subjects, objects, lemma_to_word, visword_to_word
 
 
     def _get_clusters(self, sentences, word_pairs):
@@ -264,7 +281,7 @@ class CohesionAnalyzerEnglish:
         return word_cluster_index
 
 
-    def _get_html_string(self, node_list, word_cluster_index, paragraphs):
+    def _get_html_string(self, node_list, word_cluster_index, paragraphs, visword_to_word):
         """Generates an html string with spans for each word in order
         to signal the mapping between visualization and text
 
@@ -319,13 +336,18 @@ class CohesionAnalyzerEnglish:
             # Finish paragraph
             html_string += '</p>'
 
-        # Replace strings with
+        # Remove line breaks
+        html_string = html_string.replace('\n', '')
+
+        # Loop over every word
         for node in node_list:
             # Get cluster
             cluster = word_cluster_index[node]
 
-            # Change to span element
-            html_string = html_string.replace(node, '<span class="cluster-' + str(cluster) + '">' + node + '</span>')
+            # Loop over every possible word for word in visualization
+            for real_word in list(set(visword_to_word[node])):
+                # Change to span element
+                html_string = html_string.replace(real_word, '<span class="cluster-' + str(cluster) + '">' + real_word + '</span>')
 
         return html_string
 
@@ -350,7 +372,8 @@ class CohesionAnalyzerEnglish:
         text_nlp, sentences, paragraphs = self._preprocess_text(text)
 
         # Generate word pairs
-        word_pairs, subjects, objects = self._generate_nouns(sentences)
+        word_pairs, subjects, objects, lemma_to_word, visword_to_word \
+            = self._generate_nouns(sentences)
 
         # Get clusters
         cluster = self._get_clusters(sentences, word_pairs)
@@ -371,7 +394,8 @@ class CohesionAnalyzerEnglish:
         nodes_dict = [{'id': word, 'index': ind} for ind, word, in enumerate(nodes_list)]
 
         # Generate html string
-        html_string = self._get_html_string(nodes_list, word_cluster_index, paragraphs)
+        html_string = self._get_html_string(nodes_list, word_cluster_index,
+            paragraphs, visword_to_word)
 
         # return self.word_pairs
         return {'links': word_pairs,
