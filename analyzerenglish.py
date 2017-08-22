@@ -363,16 +363,6 @@ class CohesionAnalyzerEnglish:
         # Remove line breaks
         html_string = html_string.replace('\n', '')
 
-        # # Loop over every word
-        # for node in node_list:
-        #     # Get cluster
-        #     cluster = word_cluster_index[node]
-
-        #     # Loop over every possible word for word in visualization
-        #     for real_word in list(set(visword_to_word[node.lower()])):
-        #         # Change to span element
-        #         html_string = html_string.replace(real_word, '<span class="cluster-' + str(cluster) + '">' + real_word + '</span>')
-
         return html_string
 
 
