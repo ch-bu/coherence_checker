@@ -62,17 +62,17 @@ class CohesionAnalyzerEnglish:
 
             # Build dict with lemma
             for word in nouns:
-                word_lower = word.orth_.lower()
-
                 # Save exact orthographic text for mouse over
-                if visword_to_word.get(word_lower):
-                    visword_to_word[word_lower].append(word.orth_)
+                if visword_to_word.get(word.lemma_):
+                    if not word.orth_ in visword_to_word[word.lemma_]:
+                        visword_to_word[word.lemma_].append(word.orth_)
                 else:
-                    visword_to_word[word_lower] = [word.orth_]
+                    visword_to_word[word.lemma_] = [word.orth_]
 
                 # Save lemma to word connection
                 if lemma_to_word.get(word.lemma_):
-                    lemma_to_word[word.lemma_].append(word.orth_)
+                    if not word.orth_ in lemma_to_word[word.lemma_]:
+                        lemma_to_word[word.lemma_].append(word.orth_)
                 else:
                     lemma_to_word[word.lemma_] = [word.orth_]
 
@@ -172,8 +172,12 @@ class CohesionAnalyzerEnglish:
                     if len(sentences_shared_elements) > 0:
                         # print(sentences_share_element)
                         for shared_element in sentences_shared_elements:
-                            append_to_word_pairs(noun, shared_element, 'between')
+                            word_pairs.append(
+                              {'source': noun,
+                               'target': shared_element,
+                               'device': 'between'})
 
+        # Make set of lemma to word
         return word_pairs, subjects, objects, lemma_to_word, visword_to_word
 
 
@@ -437,6 +441,7 @@ class CohesionAnalyzerEnglish:
 
         # return self.word_pairs
         return {'links': word_pairs,
+                'lemmaWord': lemma_to_word,
                 'nodes': nodes_dict,
                 'numSentences': len(sentences),
                 'numConcepts': len(nodes),
