@@ -1047,7 +1047,7 @@ text2 = """Die Cognitive-Load-Theory geht davon aus, dass der Speicher des
 
 text3 = """Das Wissen zeichnet einen Menschen aus. Sprachkenntnis zum
     Beispiel ist wichtig, da Menschen sonst nicht Sprechen koennen. Der Bezug
-    zur Realitt ermglicht dies. Vor allem der Praxisbezug ist dabei wichtig.
+    zur Realität ermglicht dies. Vor allem der Praxisbezug ist dabei wichtig.
     """
 
 text12 = """Das Wissen zeichnet einen Menschen aus. Sprachkenntnis zum
@@ -1082,4 +1082,4 @@ text11 = """Lisbeth möchte in das Kino. [LINEBREAK]Im Kino gibt es Popcorn."""
 
 text13 = "Ein Bier ist kein Wein. Schule sind Biere."
 
-print(analyzeTextCohesion(text))
+# print(analyzeTextCohesion(text3))
