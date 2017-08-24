@@ -48,8 +48,8 @@ class CohesionAnalyzerEnglish:
         def append_to_word_pairs(zero, one, device):
             """A little helper function to avoid redundancy"""
             word_pairs.append(
-              {'source': word_dict[zero.root.lemma_].lower(),
-               'target': word_dict[one.root.lemma_].lower(),
+              {'source': zero.lemma_,
+               'target': one.lemma_,
                'device': device})
 
         # Loop over every sentence
@@ -58,32 +58,32 @@ class CohesionAnalyzerEnglish:
             noun_chunks = filter(lambda x: x.root.prob < -7,
                 list(sentence.noun_chunks))
 
+            nouns = [noun for noun in sentence if noun.pos_ in ['NOUN', 'PROP']]
+
             # Build dict with lemma
-            for word in noun_chunks:
+            for word in nouns:
                 word_lower = word.orth_.lower()
 
-                if not word.root.lemma_ in word_dict:
-                    word_dict[word.root.lemma_] = word_lower
-
+                # Save exact orthographic text for mouse over
                 if visword_to_word.get(word_lower):
                     visword_to_word[word_lower].append(word.orth_)
                 else:
                     visword_to_word[word_lower] = [word.orth_]
 
-                # lemma_to_word[word.root.lemma]:
-                if lemma_to_word.get(word.root.lemma_):
-                    lemma_to_word[word.root.lemma_].append(word.orth_)
+                # Save lemma to word connection
+                if lemma_to_word.get(word.lemma_):
+                    lemma_to_word[word.lemma_].append(word.orth_)
                 else:
-                    lemma_to_word[word.root.lemma_] = [word.orth_]
+                    lemma_to_word[word.lemma_] = [word.orth_]
 
             # Get subjects
-            subjects_cur = [s for s in noun_chunks
-                if s.root.dep_ in ['nsubj', 'csubj', 'nsubjpass', 'ROOT']]
+            subjects_cur = list(set([s for s in nouns
+                if s.dep_ in ['nsubj', 'csubj', 'nsubjpass', 'ROOT']]))
             subjects += subjects_cur
 
             # Get objects
-            objects_cur = [o for o in noun_chunks
-                if o.root.dep_ in ['dobj', 'obj', 'iobj', 'pobj', 'attr', 'conj']]
+            objects_cur = [o for o in nouns
+                if o.dep_ in ['dobj', 'obj', 'iobj', 'pobj', 'attr', 'conj']]
             objects += objects_cur
 
             # There are multiple of both
@@ -116,40 +116,63 @@ class CohesionAnalyzerEnglish:
 
             # Lets look at the next sentence if there is a link between the two
             if index < (len(sentences) - 1):
+                ################################################
+                ## Combine semantic related words
+                ################################################
+
                 # Get noun chunks of next sentence
-                noun_chunks_next = list(sentences[index + 1].noun_chunks)
+                nouns_next = [noun for noun in sentences[index + 1] if noun.pos_ in ['NOUN', 'PROP']]
 
                 # Combine all chunks between two sentences
-                my_combinations = list(product(noun_chunks, noun_chunks_next))
+                my_combinations = list(product(nouns, nouns_next))
 
                 # Calculate similarity between pairs
                 similarity_pairs = [(comb[0], comb[1], comb[0].similarity(comb[1]))
                     for comb in my_combinations]
 
                 # We are only interested in pairs with a high similarity
-                similarity_filter = filter(lambda x: x[2] > .76, similarity_pairs)
+                similarity_filter = filter(lambda x: x[2] > .59, similarity_pairs)
 
                 # We have found chunks that are similar
                 if len(similarity_filter) > 0:
                     # Loop over every pair and append
                     for pair in similarity_filter:
                         # Do not add pairs with same orthographie
-                        if pair[0].orth_ != pair[1].orth_:
-                            try:
-                                # Check if root already exists
-                                if pair[0].root.lemma_ in word_dict:
-                                    if not pair[1].root.lemma_ in word_dict:
-                                        word_dict[pair[1].root.lemma_] = pair[1].orth_
-                                else:
-                                    if not pair[1].root.lemma_ in word_dict:
-                                        word_dict[pair[1].root.lemma_] = pair[1].orth_
+                        if pair[0].lemma_ != pair[1].lemma_:
+                            append_to_word_pairs(pair[0], pair[1], 'between')
 
-                                word_dict[pair[0].root.lemma_] = pair[0].orth_
+                #####################################################
+                ## Get hypernyms and hyponyms
+                #####################################################
 
-                                # Append word pairs
-                                append_to_word_pairs(pair[0].orth_.lower(), pair[1].orth_.lower(), 'between')
-                            except AttributeError:
-                                pass
+                # Loop over every noun in current sentence
+                for noun in nouns:
+                    ###############################
+                    # Get hypernyms and hyponyms
+                    ###############################
+                    # Get all synsets of current noun
+                    synsets_current_noun = [synset for synset in wn.synsets(noun.orth_)]
+
+                    # Get all hyponyms and hyperonyms from all synsets
+                    hyponyms_current_noun = [synset.hyponyms() for synset in synsets_current_noun]
+                    hypernyms_current_noun = [synset.hypernyms() for synset in synsets_current_noun]
+
+                    # Get all synsets of hyperonyms and hypernyms
+                    synsets = [synset for synsets in (hyponyms_current_noun + hypernyms_current_noun) for synset in synsets]
+
+                    # Get all lemmas
+                    hypernyms_hyponyms = ([lemma.name().replace('_', ' ') for synset in synsets for lemma in synset.lemmas()])
+
+                    ################################
+                    # Connect to next sentence
+                    ################################
+                    # sentences_share_element = bool(set(hypernyms_hyponyms) & set(nouns_next_sentence))
+                    sentences_shared_elements = list(set(hypernyms_hyponyms).intersection(nouns_next))
+
+                    if len(sentences_shared_elements) > 0:
+                        # print(sentences_share_element)
+                        for shared_element in sentences_shared_elements:
+                            append_to_word_pairs(noun, shared_element, 'between')
 
         return word_pairs, subjects, objects, lemma_to_word, visword_to_word
 
