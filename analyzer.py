@@ -569,7 +569,7 @@ def generateHTML(paragraph_split, word_lemma_mapping, word_cluster_index):
     """Generates the html for the editor
     """
 
-    html_string = '';
+    html_string = ''
 
     for paragraph in paragraph_split:
         #######################################
@@ -627,7 +627,7 @@ def generateHTML(paragraph_split, word_lemma_mapping, word_cluster_index):
                 # The word does not occur in the word lemma dicitonary
                 # It should not be assigned a class for highlighting
                 except KeyError:
-                    paragraph_string += '<span>' + word + '</span>'
+                    paragraph_string += word
 
                 # Append carrier if it exists
                 paragraph_string += carrier if carrier else ''
@@ -645,6 +645,10 @@ def generateHTML(paragraph_split, word_lemma_mapping, word_cluster_index):
                 cluster_next = []
 
                 for word in words_next_sentence:
+                    # Check if word ends with a special character
+                    if word.endswith(':') or word.endswith(',') or word.endswith(';'):
+                        word = re.sub(r'[:,;]', '', word)
+
                     # Catch errors
                     try:
                         lemma = word_lemma_mapping['word_lemma'][word][0]
@@ -1012,38 +1016,21 @@ text = """Im Folgenden möchte ich euch das Modell
     der das menschliche Gehirn, besonders das Arbeitsgedächtnis, ausgesetzt.
     Das Spiel läuft. Das Fußballspiel macht heute Spaß. [LINEBREAK]"""
 
-text2 = """Die Cognitive-Load-Theory geht davon aus, dass der Speicher des
-    Arbeitsgedächtnisses, welches Informationen verarbeitet, begrenzt ist.
-    Daher muss eine Lehrkraft darauf achten, dass sie die Speicherung nicht
-    überfordert. Dies kann passieren, wenn der Schüler zu vielen Belastungen
-    auf einmal ausgesetzt ist. Man unterscheidet in drei Arten von Belastung.
-    Den germane ( lernbezogenen), den extrinsic und den Intrinsic-Load.
-    Unter dem Extrinsic-Load versteht man jene Belastung, die ausschließlich
-    von außen kommt und den Schüler so am Lernen hindert. Zum Beispiel zu viel
-    Lärm, keine konzentrierte Arbeitsatmosphäre oder Ablenkung anderer Art.
-    Dieser kann vom Lehrenden beeinflusst werden. Der Lehrende sollte darauf
-    achten, diese Belastung so gering wie möglich zu halten, um dem zu
-    Lehrenden ein besseres Lernen zu ermöglichen. [LINEBREAK] Der Intrinsic-Load
-    bezeichnet die Belastung, die zum Verstehen eines Themas auf den
-    Schüler einwirkt. Sie ist stark abhängig vom Vorwissen des Schülers.
-    Hat ein Schüler also hohes Vorwissen zu einem Thema, welches er
-    bearbeiten muss, ist der Intrinsic-Load gering, d.h. er muss keine
-    hohe kognitive Arbeit aufwenden, um das Thema zu verstehen, da er es
-    leicht mit bereits Gelerntem verknüpfen kann. Der Germane-Load bezeichnet
-    die kognitive Belastung eines Schülers beim Lernen und Verarbeiten des
-    tatsächlich zu lernenden Stoffes. Also den kognitiven Aufwand zur
-    Verknüpfung mit bereits gelernten Themen, dem Verstehen des aktuellen
-    Themas und das Einordnen des Themas in den Gesamtzusammenhang des Faches.
-    Auch diese Belastung ist vom Lehrenden beeinflussbar, zum Beispiel
-    durch klare Erklärungen, stimmige Präsentation und Umfang und
-    Zusammenhang der einzelnen Elemente.  Insgesamt sollte man darauf
-    achten, dass der extrinsic und Intrinsic-Load möglichst gering
-    gehalten werden, während der Germane-Load möglichst hoch sein sollte.
-    Ist eine der anderen beiden Belastungen zu hoch, geht Speicherplatz
-    und somit Kapazität für den Germane-Load verloren, was zu einem
-    ineffizienten Lernen führt. Ein Fahrer geht nach Hause. Der
-    LKW-Fahrer macht einen Spaß. Der Hund geht in das Kino. Dieser Dackel macht einem
-    Probleme."""
+text2 = """Die Extrinsische-Belastung in der Cognitive-Load-Theory besteht aus der Fülle an verbalen,
+    auditiven oder visuellen Informationen, während sich die Intrinsische-Belastung auf das Vorwissen bezieht.
+    In diesem Zusammenhang muss "Vorwissen" in einem großen und allgemeinen Kontext verstanden werden,
+    der auch die bekannte Umwelt und die damit verbundenen Naturgesetze mit einbezieht.
+    Die Informationsaufnahme ist somit ein Abgleichen der extrinsischen mit der
+    intrinsischen Belastung, die maßgeblich von der lernbezogenen Belastung beeinflusst wird.
+    Diese beschreibt den Bereich der extrinsischen Belastung, der für
+    den/die Empfänger/in des Informationsflusses relevant ist und in das Gedächtnis aufgenommen
+    werden soll."""
+
+text19 = """Die Informationsaufnahme ist somit ein Abgleichen der extrinsischen
+    mit der intrinsischen Belastung, die maßgeblich von der lernbezogenen
+    Belastung beeinflusst wird. Diese beschreibt den Bereich der extrinsischen
+    Belastung, der für den/die Empfänger/in des Informationsflusses
+    relevant ist und in das Gedächtnis aufgenommen werden soll."""
 
 text3 = """Das Wissen zeichnet einen Menschen aus. Sprachkenntnis zum
     Beispiel ist wichtig, da Menschen sonst nicht Sprechen koennen. Der Bezug
@@ -1082,4 +1069,4 @@ text11 = """Lisbeth möchte in das Kino. [LINEBREAK]Im Kino gibt es Popcorn."""
 
 text13 = "Ein Bier ist kein Wein. Schule sind Biere."
 
-# print(analyzeTextCohesion(text3))
+# print(analyzeTextCohesion(text19))
