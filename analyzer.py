@@ -893,10 +893,10 @@ def analyzeTextCohesion(text):
     coreferences = []
 
     # Get compounds
-    compounds = []
+    # compounds = []
 
     # Get stem relations
-    stem_relations = []
+    # stem_relations = []
 
     # Get hypernym hyponym pairs
     # hyponym_hyper_pairs = getHypoHyperPairs(sentences, gn)
