@@ -160,38 +160,38 @@ class CohesionAnalyzerEnglish:
                 #####################################################
 
                 # Loop over every noun in current sentence
-                for noun in nouns:
-                    ###############################
-                    # Get hypernyms and hyponyms
-                    ###############################
-                    # Get all synsets of current noun
-                    synsets_current_noun = [synset for synset in wn.synsets(noun.orth_)]
-
-                    # Get all hyponyms and hyperonyms from all synsets
-                    hyponyms_current_noun = [synset.hyponyms() for synset in synsets_current_noun]
-                    hypernyms_current_noun = [synset.hypernyms() for synset in synsets_current_noun]
-
-                    # Get all synsets of hyperonyms and hypernyms
-                    synsets = [synset for synsets in (hyponyms_current_noun + hypernyms_current_noun) for synset in synsets]
-
-                    # Get all lemmas
-                    hypernyms_hyponyms = ([lemma.name().replace('_', ' ') for synset in synsets for lemma in synset.lemmas()])
-
-                    ################################
-                    # Connect to next sentence
-                    ################################
-                    # sentences_share_element = bool(set(hypernyms_hyponyms) & set(nouns_next_sentence))
-                    sentences_shared_elements = list(set(hypernyms_hyponyms).intersection(nouns_next))
-
-                    if len(sentences_shared_elements) > 0:
-                        # print(sentences_share_element)
-                        for shared_element in sentences_shared_elements:
-                            word_pairs.append(
-                              {'source': noun,
-                               'target': shared_element,
-                               'device': 'between',
-                               'sentence_source': index + 1,
-                               'sentence_target': index + 2})
+                # for noun in nouns:
+                #     ###############################
+                #     # Get hypernyms and hyponyms
+                #     ###############################
+                #     # Get all synsets of current noun
+                #     synsets_current_noun = [synset for synset in wn.synsets(noun.orth_)]
+                #
+                #     # Get all hyponyms and hyperonyms from all synsets
+                #     hyponyms_current_noun = [synset.hyponyms() for synset in synsets_current_noun]
+                #     hypernyms_current_noun = [synset.hypernyms() for synset in synsets_current_noun]
+                #
+                #     # Get all synsets of hyperonyms and hypernyms
+                #     synsets = [synset for synsets in (hyponyms_current_noun + hypernyms_current_noun) for synset in synsets]
+                #
+                #     # Get all lemmas
+                #     hypernyms_hyponyms = ([lemma.name().replace('_', ' ') for synset in synsets for lemma in synset.lemmas()])
+                #
+                #     ################################
+                #     # Connect to next sentence
+                #     ################################
+                #     # sentences_share_element = bool(set(hypernyms_hyponyms) & set(nouns_next_sentence))
+                #     sentences_shared_elements = list(set(hypernyms_hyponyms).intersection(nouns_next))
+                #
+                #     if len(sentences_shared_elements) > 0:
+                #         # print(sentences_share_element)
+                #         for shared_element in sentences_shared_elements:
+                #             word_pairs.append(
+                #               {'source': noun,
+                #                'target': shared_element,
+                #                'device': 'between',
+                #                'sentence_source': index + 1,
+                #                'sentence_target': index + 2})
 
         # Make set of lemma to word
         return word_pairs, subjects, objects, lemma_to_word, \
@@ -318,6 +318,14 @@ class CohesionAnalyzerEnglish:
 
         return word_cluster_index
 
+#    def _helper_function_key_error(self, word_cluster_index, word_to_lemma, orth):
+#        """Avoids key error in a list comprehension if lemma is wrong
+#        from spacy"""
+#        try:
+#            return word_cluster_index[word_to_lemma[orth]]
+#        except KeyError as err:
+#            # handle division by zero error
+#            return None
 
     def _get_html_string(self, node_list, word_cluster_index, paragraphs, visword_to_word,
             word_to_lemma):
@@ -352,8 +360,11 @@ class CohesionAnalyzerEnglish:
                 # Do not look at the last sentence
                 if index != (len(tokenized_sentences) - 1):
                     # Get cluster of current sentence
-                    indexes_cur_sentence = [word_cluster_index[word_to_lemma[orth]] for node in node_list for orth in visword_to_word[node] if sent.text.find(orth) != -1]
-                    indexes_next_sentence = [word_cluster_index[word_to_lemma[orth]] for node in node_list for orth in visword_to_word[node] if tokenized_sentences[index + 1].text.find(orth) != -1]
+                    indexes_cur_sentence = [word_cluster_index[word_to_lemma[orth]]
+                        for node in node_list for orth in visword_to_word[node] if sent.text.find(orth) != -1]
+                    # Get cluster of next sentence
+                    indexes_next_sentence = [word_cluster_index[word_to_lemma[orth]]
+                        for node in node_list for orth in visword_to_word[node] if tokenized_sentences[index + 1].text.find(orth) != -1]
 
                     # Get most common cluster of current sentence
                     most_common_cluster_cur = Counter(indexes_cur_sentence).most_common(1)
@@ -396,14 +407,16 @@ class CohesionAnalyzerEnglish:
                     indexes_last_sentence = [word_cluster_index[word_to_lemma[orth]] \
                         for node in node_list for orth in visword_to_word[node] if sent.text.find(orth) != -1]
 
-                    # print indexes_last_sentence
                     # Get the most common cluster
                     most_common_cluster_last_sentence = Counter(indexes_last_sentence).most_common(1)
 
-                    # Extract the number of the most common cluster
-                    # print sentence
-                    # print most_common_cluster_last_sentence
-                    cluster_last_sentence = most_common_cluster_last_sentence[0][0]
+                    # Check if there is a noun of a cluster in the last sentence
+                    try:
+                        # Extract the number of the most common cluster
+                        cluster_last_sentence = most_common_cluster_last_sentence[0][0]
+                    except IndexError:
+                        # If not assign an empty cluster to it
+                        cluster_last_sentence = []
 
                     # Loop over every word we have
                     for node in node_list:
