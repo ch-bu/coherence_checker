@@ -887,32 +887,32 @@ def analyzeTextCohesion(text):
 
 
     # Get hypernym hyponym pairs
-    # hyponym_hyper_pairs = []
+    hyponym_hyper_pairs = []
 
     # Get coreference resolutions
-    # coreferences = []
+    coreferences = []
 
     # Get compounds
-    # compounds = []
+    compounds = []
 
     # Get stem relations
-    # stem_relations = []
+    stem_relations = []
 
     # Get hypernym hyponym pairs
-    hyponym_hyper_pairs = getHypoHyperPairs(sentences, gn)
+    # hyponym_hyper_pairs = getHypoHyperPairs(sentences, gn)
 
     # Get coreference resolutions
-    coreferences = get_coreferences(sentences, gn)
+    # coreferences = get_coreferences(sentences, gn)
 
     # Get compounds
-    compounds = get_compounds(sentences)
+    # compounds = get_compounds(sentences)
 
     # Get stem relations
-    stem_relations = get_stem_relations(sentences, gn)
+    # stem_relations = get_stem_relations(sentences, gn)
 
     # Merge all word pairs
-    word_pairs = word_pairs + hyponym_hyper_pairs + coreferences + compounds + \
-        stem_relations
+    # word_pairs = word_pairs + hyponym_hyper_pairs + coreferences + compounds + \
+    #     stem_relations
 
     ######################################
     # Calculate number of relations
@@ -1032,6 +1032,27 @@ text19 = """Die Informationsaufnahme ist somit ein Abgleichen der extrinsischen
     Belastung, der für den/die Empfänger/in des Informationsflusses
     relevant ist und in das Gedächtnis aufgenommen werden soll."""
 
+text21 = """Die Cognitiv Load Theory bezeichnet eine Methode, welche eine
+    Überblick über das Lernen bietet. Hierbei zunächst ein paar Erläuterungen.
+    Unter einer intrinischen Belastung versteht man die Lernbelastung,
+    beziehungsweisewie hoch oder niedrig das Vorwissen der jeweiligen Person ist.
+     Die extrinische Belastung dagegen bezeichnet die Informationen,
+     die im Gehirn verarbeitet werden, aber eigentlich nicht
+     zum gelingen der Aufgabe beitragen.
+     Ein Beispiel wäre dass man einen Text lesen soll und danach eine
+     Zusammmenfassung schreibt. Der Text ist relativ anspruchsvoll und das
+     Vorwissen eher gering. So ist die intrinische Belastung hoch.
+     Nebenbei laufen viele Personen im Zimmer herum und man hört Musik.
+        Die extrinische Belastung ist also auch sehr hoch. So kann man sich
+        nicht ausreichend auf die eigentliche Aufgabe konzentrieren,
+        denn man ist abgelenkt. Warum kann man das nicht eingehende
+        Informationen werden durch den sensorischen Speicher gefiltert,
+        beziehungsweise dort wird der Information eine Bedeutung zugeteilt.
+        Diese Bedeutung kann als wichtig, oder unwichtig gesehen werde.
+        Bekommt sie eine wichtige Bedeutung, wird diese Information
+        weiter an den Arbeitsspeicher, auch Kurzzeitgedächtnis genannt,
+        geleitet. """
+
 text3 = """Das Wissen zeichnet einen Menschen aus. Sprachkenntnis zum
     Beispiel ist wichtig, da Menschen sonst nicht Sprechen koennen. Der Bezug
     zur Realität ermglicht dies. Vor allem der Praxisbezug ist dabei wichtig.
@@ -1069,4 +1090,3 @@ text11 = """Lisbeth möchte in das Kino. [LINEBREAK]Im Kino gibt es Popcorn."""
 
 text13 = "Ein Bier ist kein Wein. Schule sind Biere."
 
-# print(analyzeTextCohesion(text19))
