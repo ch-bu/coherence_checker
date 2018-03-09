@@ -1089,4 +1089,3 @@ text10 = """Mit der Belastung kann ich nicht leben. Es belastet mich, dass Franz
 text11 = """Lisbeth möchte in das Kino. [LINEBREAK]Im Kino gibt es Popcorn."""
 
 text13 = "Ein Bier ist kein Wein. Schule sind Biere."
-
