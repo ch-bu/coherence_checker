@@ -505,7 +505,8 @@ def calc_local_cohesion(word_pairs, sentences):
 def get_lemma_mapping(word_pairs):
     """Get a dictionary that stores all orthographic
     forms for a lemma.
-
+                        print(word_parent['lemma'])
+                        print(pronoun['lemma'])
     Args:
         word_pairs (Array) - a list of all word_pairs
 
@@ -710,6 +711,11 @@ def analyzeTextCohesion(text):
     # Remove percent sign
     text = re.sub(r'%', '', text)
 
+    # Remove abbreviations
+    text = re.sub(r'bzgl\.', 'bezüglich', text)
+    text = re.sub(r'[Bb]sp\.', 'beispielsweise', text)
+    text = re.sub(r'sgn\.', 'sogenannten', text)
+
     # Remove trailing white space
     text = text.strip()
 
@@ -868,41 +874,52 @@ def analyzeTextCohesion(text):
                 for subset in itertools.combinations_with_replacement(nouns_full, 2):
                     if subset[0] != subset[1]:
                         # Combine accusative with dative
-                        if subset[0]['accusative'] and subset[1]['dative'] and \
-                           subset[0]['genitive']:
+                        if subset[0]['accusative'] and subset[1]['dative']:
                             # Append word pairs
                             word_pairs.append({'source': {'word': subset[0]['orth'],
                                 'lemma': subset[0]['lemma'], 'sentence': val},
                                 'target': {'word': subset[1]['orth'],
                                 'lemma': subset[1]['lemma'], 'sentence': val},
                                 'device': 'within sentence'})
-                        elif subset[1]['accusative'] and subset[0]['dative'] and \
-                             subset[1]['genitive']:
+                        elif subset[0]['accusative'] and subset[0]['genitive']:
                             # Append word pairs
                             word_pairs.append({'source': {'word': subset[0]['orth'],
                                 'lemma': subset[0]['lemma'], 'sentence': val},
                                 'target': {'word': subset[1]['orth'],
                                 'lemma': subset[1]['lemma'], 'sentence': val},
                                 'device': 'within sentence'})
-
+                        elif subset[1]['accusative'] and subset[0]['dative']:
+                            # Append word pairs
+                            word_pairs.append({'source': {'word': subset[0]['orth'],
+                                'lemma': subset[0]['lemma'], 'sentence': val},
+                                'target': {'word': subset[1]['orth'],
+                                'lemma': subset[1]['lemma'], 'sentence': val},
+                                'device': 'within sentence'})
+                        elif subset[1]['genitive'] and subset[0]['dative']:
+                            # Append word pairs
+                            word_pairs.append({'source': {'word': subset[0]['orth'],
+                                'lemma': subset[0]['lemma'], 'sentence': val},
+                                'target': {'word': subset[1]['orth'],
+                                'lemma': subset[1]['lemma'], 'sentence': val},
+                                'device': 'within sentence'})
 
     # Get hypernym hyponym pairs
     hyponym_hyper_pairs = []
 
     # Get coreference resolutions
-    coreferences = []
+    # coreferences = []
 
     # Get compounds
-    # compounds = []
+    compounds = []
 
     # Get stem relations
-    # stem_relations = []
+    stem_relations = []
 
     # Get hypernym hyponym pairs
     # hyponym_hyper_pairs = getHypoHyperPairs(sentences, gn)
 
     # Get coreference resolutions
-    # coreferences = get_coreferences(sentences, gn)
+    coreferences = get_coreferences(sentences, gn)
 
     # Get compounds
     # compounds = get_compounds(sentences)
@@ -911,6 +928,7 @@ def analyzeTextCohesion(text):
     # stem_relations = get_stem_relations(sentences, gn)
 
     # Merge all word pairs
+    word_pairs = word_pairs + coreferences
     # word_pairs = word_pairs + hyponym_hyper_pairs + coreferences + compounds + \
     #     stem_relations
 
@@ -1089,3 +1107,34 @@ text10 = """Mit der Belastung kann ich nicht leben. Es belastet mich, dass Franz
 text11 = """Lisbeth möchte in das Kino. [LINEBREAK]Im Kino gibt es Popcorn."""
 
 text13 = "Ein Bier ist kein Wein. Schule sind Biere."
+
+text14 = """Die Cognitiv Load Theory bezeichnet eine Methode,
+    welche einen Überblick über das Lernen bietet. Hierbei zunächst
+    ein paar Erläuterungen. Unter einer intrinischen Belastung versteht
+    man die Lernbelastung, beziehungsweisewie hoch oder niedrig das
+     Vorwissen der jeweiligen Person ist. Die extrinische Belastung
+     dagegen bezeichnet die Informationen, die im Gehirn verarbeitet
+     werden, aber eigentlich nicht zum gelingen der Aufgabe beitragen.
+     Ein Beispiel wäre, dass man einen Text lesen soll und danach eine
+     Zusammenfassung schreibt. Der Text ist relativ anspruchsvoll und
+     das Vorwissen eher gering. Also ist die intrinische Belastung hoch.
+     Nebenbei laufen viele Personen im Zimmer herum und man hört Musik.
+     Die extrinische Belastung ist also auch sehr hoch. So kann man sich
+     nicht ausreichend auf die eigentliche Aufgabe konzentrieren, denn
+     man ist abgelenkt. Warum kann man das nicht? Eingehende
+     Informationen werden durch den sensorischen Speicher gefiltert,
+     bzw. dort wird der Information eine Bedeutung zugeteilt. Diese Bedeutung
+     kann als wichtig, oder unwichtig empfunden werde. Bekommt sie eine
+     wichtige Bedeutung, wird diese Information weiter an den
+     Arbeitsspeicher, auch Kurzzeitgedächtnis genannt, geleitet.
+     Im Kurzzeitgedächtnis stehen allerdings nur begrenzte Kapazitäten
+     zur Verfügung. Das heißt, die Informationen können nur sehr kurz
+     gespeichert werden (Sekundenbereich), es sei denn, man wiederholt
+      sie sehr oft und denkt so aktiv daran (phonologische Schleife).
+      Hier wiederum kommt die extrinische Belastung zu tragen.
+      Diese wird also dadurch sehr hoch. Um die eingehenden Informationen
+      einordnen zu können, bildet sich jedes Individuum eigene Schemata.
+      Diese Schemata sind abstrakte Wissenskonstruktionen. Sie werden aus
+      dem Langzeitgedächtnis zu Hilfe gezogen, dort hat man einen
+      unbegrenzten Speicherplatz und die dort gespeicherten Informationen
+      gehen nicht mehr verloren."""
