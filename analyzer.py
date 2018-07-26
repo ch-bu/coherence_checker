@@ -10,6 +10,7 @@ from more_itertools import unique_everseen
 from nltk.stem.snowball import GermanStemmer
 from nltk.tokenize import sent_tokenize
 import itertools
+from sets import Set
 
 
 def getPOSElement(element, regex, tags):
@@ -929,14 +930,14 @@ def analyzeTextCohesion(text):
 
     # Merge all word pairs
     word_pairs = word_pairs + coreferences
-    # word_pairs = word_pairs + hyponym_hyper_pairs + coreferences + compounds + \
-    #     stem_relations
+    # word_pairs = word_pairs + hyponym_hyper_pairs + compounds + \
+        # stem_relations + coreferences
 
     ######################################
     # Calculate number of relations
     ######################################
 
-    word_tuples = map(lambda x: (x['source']['lemma'], x['target']['lemma']), word_pairs)
+    # word_tuples = map(lambda x: (x['source']['lemma'], x['target']['lemma']), word_pairs)
     word_tuples = list(set([(pair['source']['lemma'], pair['target']['lemma'])
         for pair in word_pairs if pair['source']['lemma'] != pair['target']['lemma']]))
 
@@ -979,9 +980,14 @@ def analyzeTextCohesion(text):
               'cluster': pair['cluster']} for pair in word_pairs]
     nodes = [{'id': word,'index': ind} for ind, word in enumerate(word_lemma_mapping['lemma_word'])]
 
-    # Get number of concepts
-    num_concepts = len(set([concept['lemma']
-                for concept in tags if concept['noun'] == True]))
+    # # Get number of concepts
+    # num_concepts = len(set([concept['lemma']
+    #             for concept in tags if concept['noun'] == True]))
+
+    # concepts = [item for [pair['source']['lemma'], pair['target']['lemma']] for pair in word_pairs]
+    concepts = Set([item for pair in word_pairs for item in [pair['source']['lemma'], pair['target']['lemma']]])
+
+    # [item for sublist in l for item in sublist]
 
     # Generate html string for editor
     html_string = generateHTML(paragraph_split, word_lemma_mapping, word_cluster_index)
@@ -989,8 +995,10 @@ def analyzeTextCohesion(text):
     return {'word_pairs': word_pairs,
             'links': links,
             'nodes': nodes,
+            'tuples': word_tuples,
+            'concepts': concepts,
             'numSentences': num_sentences,
-            'numConcepts': num_concepts,
+            'numConcepts': len(concepts),
             'clusters': cluster,
             'numRelations': len(word_tuples),
             'numCluster': len(cluster),

@@ -5,10 +5,10 @@ from analyzer import analyzeTextCohesion
 import re
 
 # Path for data file
-path = '/home/christian/Downloads/andi_osmose_good.csv'
+path = '/home/christian/Repositories/coherence_checker/text/kasus_verbflexion_satzbau_ korrigiert.csv'
 
 # Read data into dataframe
-data = DataFrame.from_csv(path, sep=',', index_col=False)
+data = DataFrame.from_csv(path, sep=';', index_col=False)
 
 # Create empty data frame
 data_with_values = DataFrame(columns=('id', 'text',
@@ -22,8 +22,11 @@ for index, row in data.iterrows():
 
     # print(row['pre_text'].replace('[BREAK]', ' '))
 
-    # Analyze current text
-    res = analyzeTextCohesion(row['text'])
+    try:
+        # Analyze current text
+        res = analyzeTextCohesion(row['text'])
+    except TypeError:
+        continue
 
     # Retrieve important variables from data
     num_sentences = res['numSentences']
@@ -41,5 +44,5 @@ for index, row in data.iterrows():
 
 # Save data as csv
 data_with_values.to_csv(
-    '/home/christian/Downloads/andi_osmose_analyzed.csv',
+    '/home/christian/Repositories/coherence_checker/text/kasus_verbflexion_satzbau_ korrigiert_ausgewertet.csv',
     encoding='utf-8', index=False)

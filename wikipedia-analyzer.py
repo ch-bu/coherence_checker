@@ -1,13 +1,13 @@
 # encoding: utf-8
 
 from pandas import DataFrame
-# from analyzer import analyzeTextCohesion
-from analyzerenglish import CohesionAnalyzerEnglish
+from analyzer import analyzeTextCohesion
+# from analyzerenglish import CohesionAnalyzerEnglish
 import re
 import spacy
 
 # Path for data file
-path = '/home/christian/Repositories/goldstandardstudy-ss17/data/wikipedia_raw_english.csv'
+path = '/home/christian/Repositories/goldstandardstudy-ss17/data/study2/wikipedia_raw.csv'
 # path = '/home/christian/Downloads/test.csv'
 
 # Read data into dataframe
@@ -24,16 +24,18 @@ data_with_values = DataFrame(columns=('title', 'url', 'summary', 'datetime',
     # 'num_hyper_hypo_pre'))
 
 # Load spacy
-nlp = spacy.load('en_core_web_md')
+# nlp = spacy.load('en_core_web_md')
 
-analyzer = CohesionAnalyzerEnglish(nlp)
+# analyzer = CohesionAnalyzerEnglish(nlp)
 
 for index, row in data.iterrows():
+
+    print("Index: {}".format(index))
 
     print('%s' % (row['title']))
 
     # Analyze current text
-    res = analyzer.get_data_for_visualization(row['summary'].decode('utf-8'))
+    res = analyzeTextCohesion(row['summary'])
 
     # Retrieve important variables from data
     num_sentences = res['numSentences']
@@ -52,5 +54,5 @@ for index, row in data.iterrows():
 
 # Save data as csv
 data_with_values.to_csv(
-    '/home/christian/Repositories/goldstandardstudy-ss17/data/wikipedia-analyzed_english_no_hypernyms_hyponyms.py',
+    '/home/christian/Repositories/goldstandardstudy-ss17/data/study2/wikipedia-analyzed_lexical-coref_improved.py',
     encoding='utf-8', index=False)
